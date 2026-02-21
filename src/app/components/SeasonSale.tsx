@@ -66,9 +66,9 @@ export function SeasonSale() {
               <div className="p-5">
                 <h3 className="text-lg mb-3 dark:text-white">{product.name}</h3>
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="text-2xl text-red-600">Ksh {product.salePrice.toLocaleString()}</span>
+                  <span className="text-2xl text-red-600">${product.salePrice.toLocaleString()}</span>
                   <span className="text-lg text-gray-500 line-through">
-                    Ksh {product.originalPrice.toLocaleString()}
+                    ${product.originalPrice.toLocaleString()}
                   </span>
                 </div>
                 <button className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">

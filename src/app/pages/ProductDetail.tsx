@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { ShoppingCart, Heart, Share2, Star, Truck, RotateCcw, Shield, ChevronLeft } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 interface Product {
   id: number;
@@ -120,8 +121,51 @@ export function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'description' | 'specifications'>('description');
+  const { addToCart, toggleFavorite, isFavorite } = useApp();
 
   const product = productData[Number(id)] || productData[1];
+  const isProductFavorite = isFavorite(product.id);
+
+  const handleAddToCart = () => {
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      category: product.category,
+    }, quantity);
+    // Optional: Show a success message or notification
+  };
+
+  const handleToggleFavorite = () => {
+    toggleFavorite({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      category: product.category,
+    });
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: product.name,
+      text: `Check out ${product.name} - $${product.price.toLocaleString()}`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(window.location.href);
+        alert('Link copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -203,10 +247,10 @@ export function ProductDetail() {
 
               {/* Price */}
               <div className="flex items-center gap-4 mb-6">
-                <span className="text-4xl text-red-600">Ksh {product.price.toLocaleString()}</span>
+                <span className="text-4xl text-red-600">${product.price.toLocaleString()}</span>
                 {product.originalPrice && (
                   <span className="text-2xl text-gray-500 line-through">
-                    Ksh {product.originalPrice.toLocaleString()}
+                    ${product.originalPrice.toLocaleString()}
                   </span>
                 )}
               </div>
@@ -250,14 +294,33 @@ export function ProductDetail() {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-4 mb-6">
-                <button className="flex-1 min-w-[200px] flex items-center justify-center gap-2 px-6 py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                <button
+                  onClick={handleAddToCart}
+                  className="flex-1 min-w-[200px] flex items-center justify-center gap-2 px-6 py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
                   <ShoppingCart className="w-5 h-5" />
                   Add to Cart
                 </button>
-                <button className="p-4 border dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <Heart className="w-5 h-5 dark:text-white" />
+                <button
+                  onClick={handleToggleFavorite}
+                  className={`p-4 border rounded-lg transition-colors ${
+                    isProductFavorite
+                      ? 'bg-red-50 border-red-600 dark:bg-red-900/20 dark:border-red-500'
+                      : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Heart
+                    className={`w-5 h-5 ${
+                      isProductFavorite
+                        ? 'fill-red-600 text-red-600'
+                        : 'dark:text-white'
+                    }`}
+                  />
                 </button>
-                <button className="p-4 border dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <button
+                  onClick={handleShare}
+                  className="p-4 border dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
                   <Share2 className="w-5 h-5 dark:text-white" />
                 </button>
               </div>
@@ -266,7 +329,7 @@ export function ProductDetail() {
               <div className="border-t dark:border-gray-700 pt-6 space-y-4">
                 <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                   <Truck className="w-5 h-5 text-red-600" />
-                  <span>Free shipping on orders over Ksh 1000</span>
+                  <span>Free shipping on orders over $100</span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                   <RotateCcw className="w-5 h-5 text-red-600" />
@@ -351,7 +414,7 @@ export function ProductDetail() {
                 <div className="p-4">
                   <div className="text-sm text-red-600 mb-2">{relatedProduct.category}</div>
                   <h3 className="mb-2 dark:text-white">{relatedProduct.name}</h3>
-                  <span className="text-xl text-red-600">Ksh {relatedProduct.price.toLocaleString()}</span>
+                  <span className="text-xl text-red-600">${relatedProduct.price.toLocaleString()}</span>
                 </div>
               </Link>
             ))}

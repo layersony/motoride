@@ -68,7 +68,7 @@ export function NewArrivals() {
               <div className="p-5">
                 <h3 className="text-lg mb-2 dark:text-white">{product.name}</h3>
                 <div className="flex justify-between items-center">
-                  <span className="text-2xl text-red-600">Ksh {product.price}</span>
+                  <span className="text-2xl text-red-600">${product.price}</span>
                   <button className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
                     <ShoppingCart className="w-5 h-5" />
                   </button>

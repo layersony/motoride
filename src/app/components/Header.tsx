@@ -1,13 +1,16 @@
 import { Search, Moon, Sun, User, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router';
+import { useApp } from '../context/AppContext';
 
 interface HeaderProps {
   darkMode: boolean;
   toggleDarkMode: () => void;
-  cartCount: number;
 }
 
-export function Header({ darkMode, toggleDarkMode, cartCount }: HeaderProps) {
+export function Header({ darkMode, toggleDarkMode }: HeaderProps) {
+  const { cart } = useApp();
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white dark:bg-gray-900 dark:border-gray-800">
       <div className="container mx-auto px-4 py-4">
@@ -47,20 +50,26 @@ export function Header({ darkMode, toggleDarkMode, cartCount }: HeaderProps) {
               )}
             </button>
 
-            {/* Login */}
-            <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            {/* Login / Profile */}
+            <Link
+              to="/profile"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
               <User className="w-5 h-5 dark:text-white" />
-            </button>
+            </Link>
 
             {/* Cart */}
-            <button className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <Link
+              to="/cart"
+              className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
               <ShoppingCart className="w-5 h-5 dark:text-white" />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {cartCount}
                 </span>
               )}
-            </button>
+            </Link>
           </div>
         </div>
 

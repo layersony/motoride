@@ -118,7 +118,7 @@ export function Products() {
   const [showFilters, setShowFilters] = useState(false);
 
   const categories = ['All', 'Sport Bikes', 'Cruisers', 'Adventure', 'Racing', 'Vintage', 'Electric', 'Helmets', 'Jackets', 'Gloves', 'Parts & Accessories'];
-  const priceRanges = ['All', 'Under Ksh 500', 'Ksh 500 - Ksh 1000', 'Ksh 1000 - Ksh 5000', 'Ksh 5000 - Ksh 10000', 'Over Ksh 10000'];
+  const priceRanges = ['All', 'Under $500', '$500 - $1000', '$1000 - $5000', '$5000 - $10000', 'Over $10000'];
 
   useEffect(() => {
     let filtered = [...allProducts];
@@ -144,15 +144,15 @@ export function Products() {
     if (priceRange !== 'All') {
       filtered = filtered.filter(p => {
         switch (priceRange) {
-          case 'Under Ksh 500':
+          case 'Under $500':
             return p.price < 500;
-          case 'Ksh 500 - Ksh 1000':
+          case '$500 - $1000':
             return p.price >= 500 && p.price <= 1000;
-          case 'Ksh 1000 - Ksh 5000':
+          case '$1000 - $5000':
             return p.price >= 1000 && p.price <= 5000;
-          case 'Ksh 5000 - Ksh 10000':
+          case '$5000 - $10000':
             return p.price >= 5000 && p.price <= 10000;
-          case 'Over Ksh 10000':
+          case 'Over $10000':
             return p.price > 10000;
           default:
             return true;
@@ -360,10 +360,10 @@ export function Products() {
                       <div className="text-sm text-red-600 mb-2">{product.category}</div>
                       <h3 className="text-lg mb-2 dark:text-white">{product.name}</h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl text-red-600">Ksh {product.price.toLocaleString()}</span>
+                        <span className="text-2xl text-red-600">${product.price.toLocaleString()}</span>
                         {product.originalPrice && product.originalPrice !== product.price && (
                           <span className="text-gray-500 line-through">
-                            Ksh {product.originalPrice.toLocaleString()}
+                            ${product.originalPrice.toLocaleString()}
                           </span>
                         )}
                       </div>
@@ -398,10 +398,10 @@ export function Products() {
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl text-red-600">Ksh {product.price.toLocaleString()}</span>
+                          <span className="text-2xl text-red-600">${product.price.toLocaleString()}</span>
                           {product.originalPrice && product.originalPrice !== product.price && (
                             <span className="text-gray-500 line-through">
-                              Ksh {product.originalPrice.toLocaleString()}
+                              ${product.originalPrice.toLocaleString()}
                             </span>
                           )}
                         </div>

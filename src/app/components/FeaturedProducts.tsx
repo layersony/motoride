@@ -1,5 +1,6 @@
 import { ShoppingCart, Eye } from 'lucide-react';
 import { Link } from 'react-router';
+import { useApp } from '../context/AppContext';
 
 interface Product {
   id: number;
@@ -55,6 +56,18 @@ const products: Product[] = [
 ];
 
 export function FeaturedProducts() {
+  const { addToCart } = useApp();
+
+  const handleAddToCart = (product: Product) => {
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      category: product.category,
+    });
+  };
+
   return (
     <section className="py-16 bg-white dark:bg-gray-900">
       <div className="container mx-auto px-4">
@@ -84,7 +97,10 @@ export function FeaturedProducts() {
                   <Link to={`/product/${product.id}`} className="p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                     <Eye className="w-5 h-5 text-gray-700 dark:text-white" />
                   </Link>
-                  <button className="p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <button
+                    onClick={() => handleAddToCart(product)}
+                    className="p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
                     <ShoppingCart className="w-5 h-5 text-gray-700 dark:text-white" />
                   </button>
                 </div>
@@ -93,8 +109,14 @@ export function FeaturedProducts() {
                 <div className="text-sm text-red-600 mb-2">{product.category}</div>
                 <h3 className="text-lg mb-2 dark:text-white">{product.name}</h3>
                 <div className="flex justify-between items-center">
-                  <span className="text-2xl text-red-600">Ksh {product.price.toLocaleString()}</span>
-                  <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                  <span className="text-2xl text-red-600">${product.price.toLocaleString()}</span>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleAddToCart(product);
+                    }}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                  >
                     Add to Cart
                   </button>
                 </div>

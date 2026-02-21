@@ -8,6 +8,7 @@ import { Products } from './pages/Products';
 import { ProductDetail } from './pages/ProductDetail';
 import { Cart } from './pages/Cart';
 import { Profile } from './pages/Profile';
+import { NotFound } from './pages/NotFound';
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -36,6 +37,7 @@ export default function App() {
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
           <Footer />

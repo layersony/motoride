@@ -1,6 +1,28 @@
+import { useState } from 'react';
 import { Mail, Gift, TrendingUp, RotateCcw } from 'lucide-react';
+import { coreApi } from '../services/api';
 
 export function Newsletter() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setStatus('loading');
+    try {
+      const res = await coreApi.subscribeNewsletter(email);
+      setMessage(res.detail);
+      setStatus('success');
+      setEmail('');
+    } catch (err: unknown) {
+      const detail = (err as Record<string, string>)?.detail ?? 'Failed to subscribe. Please try again.';
+      setMessage(detail);
+      setStatus('error');
+    }
+  };
+
   const benefits = [
     {
       icon: Gift,
@@ -54,16 +76,28 @@ export function Newsletter() {
                 <p>Get the latest news, deals, and exclusive offers delivered to your inbox</p>
               </div>
             </div>
-            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+            <form onSubmit={handleSubmit} className="mt-6 flex flex-col sm:flex-row gap-3">
               <input
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email address"
                 className="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
+                required
               />
-              <button className="px-8 py-3 bg-white text-red-600 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap">
-                Subscribe Now
+              <button
+                type="submit"
+                disabled={status === 'loading'}
+                className="px-8 py-3 bg-white text-red-600 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap disabled:opacity-60"
+              >
+                {status === 'loading' ? 'Subscribing...' : 'Subscribe Now'}
               </button>
-            </div>
+            </form>
+            {message && (
+              <p className={`mt-3 text-sm ${status === 'success' ? 'text-white' : 'text-yellow-200'}`}>
+                {message}
+              </p>
+            )}
           </div>
         </div>
       </div>

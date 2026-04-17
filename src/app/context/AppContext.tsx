@@ -1,4 +1,22 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from 'react';
+import {
+  authApi,
+  cartApi,
+  setTokens,
+  clearTokens,
+  getAccessToken,
+  type ApiUser,
+  type ApiCartItem,
+} from '../services/api';
+
+// ── Interfaces (kept identical so all existing components compile) ────────────
 
 interface CartItem {
   id: number;
@@ -7,6 +25,8 @@ interface CartItem {
   image: string;
   category: string;
   quantity: number;
+  /** Internal: the cart-item row id from the backend (differs from product id) */
+  cartItemId?: number;
 }
 
 interface FavoriteItem {
@@ -25,104 +45,293 @@ interface User {
 }
 
 interface AppContextType {
+  // Auth
+  apiUser: ApiUser | null;
+  isAuthenticated: boolean;
+  isAuthLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: {
+    username: string;
+    email: string;
+    first_name?: string;
+    last_name?: string;
+    password: string;
+    password2: string;
+  }) => Promise<void>;
+  logout: () => Promise<void>;
+
+  // Cart (backed by API when authenticated, local otherwise)
   cart: CartItem[];
-  favorites: FavoriteItem[];
-  user: User;
+  cartLoading: boolean;
   addToCart: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
   removeFromCart: (id: number) => void;
   updateCartQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
+
+  // Favorites (local — add backend persistence separately if needed)
+  favorites: FavoriteItem[];
   toggleFavorite: (item: FavoriteItem) => void;
   isFavorite: (id: number) => boolean;
+
+  // User profile (mirrors ApiUser for the Profile page)
+  user: User;
   updateUser: (userData: Partial<User>) => void;
   updatePassword: (oldPassword: string, newPassword: string) => boolean;
+  syncProfileWithApi: () => Promise<void>;
 }
+
+// ── Helper: map ApiCartItem → local CartItem ─────────────────────────────────
+
+function toCartItem(item: ApiCartItem): CartItem {
+  const p = item.product;
+  return {
+    id: p.id,
+    name: p.name,
+    price: parseFloat(p.price),
+    image: p.image ?? '',
+    category: p.category_name,
+    quantity: item.quantity,
+    cartItemId: item.id,
+  };
+}
+
+// ── Context ───────────────────────────────────────────────────────────────────
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  // ── Auth state ─────────────────────────────────────────────────────────────
+  const [apiUser, setApiUser] = useState<ApiUser | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  // ── Cart state ─────────────────────────────────────────────────────────────
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [cartLoading, setCartLoading] = useState(false);
+
+  // ── Favorites (local) ──────────────────────────────────────────────────────
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+
+  // ── Profile state (populated from apiUser) ─────────────────────────────────
   const [user, setUser] = useState<User>({
-    name: 'John Rider',
-    email: 'john.rider@email.com',
-    phone: '+1 (555) 123-4567',
-    address: '123 Main Street, New York, NY 10001',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
   });
 
-  const addToCart = (item: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
-      if (existingItem) {
-        return prevCart.map((cartItem) =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + quantity }
-            : cartItem
-        );
-      }
-      return [...prevCart, { ...item, quantity }];
-    });
-  };
-
-  const removeFromCart = (id: number) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== id));
-  };
-
-  const updateCartQuantity = (id: number, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(id);
-      return;
+  // ── Bootstrap: check for existing token on mount ──────────────────────────
+  useEffect(() => {
+    const token = getAccessToken();
+    if (token) {
+      authApi
+        .getProfile()
+        .then((profile) => {
+          setApiUser(profile);
+          setUser({
+            name: profile.full_name || profile.username,
+            email: profile.email,
+            phone: profile.phone,
+            address: profile.address,
+          });
+        })
+        .catch(() => clearTokens())
+        .finally(() => setIsAuthLoading(false));
+    } else {
+      setIsAuthLoading(false);
     }
-    setCart((prevCart) =>
-      prevCart.map((item) => (item.id === id ? { ...item, quantity } : item))
-    );
-  };
+  }, []);
 
-  const clearCart = () => {
+  // ── Load server cart when user logs in ────────────────────────────────────
+  useEffect(() => {
+    if (!apiUser) return;
+    setCartLoading(true);
+    cartApi
+      .getCart()
+      .then((res) => setCart(res.items.map(toCartItem)))
+      .catch(() => {})
+      .finally(() => setCartLoading(false));
+  }, [apiUser]);
+
+  // ── Auth actions ──────────────────────────────────────────────────────────
+
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await authApi.login(email, password);
+    setTokens(res.access, res.refresh);
+    setApiUser(res.user);
+    setUser({
+      name: res.user.full_name || res.user.username,
+      email: res.user.email,
+      phone: res.user.phone,
+      address: res.user.address,
+    });
+  }, []);
+
+  const register = useCallback(async (data: Parameters<typeof authApi.register>[0]) => {
+    const res = await authApi.register(data);
+    setTokens(res.access, res.refresh);
+    setApiUser(res.user);
+    setUser({
+      name: res.user.full_name || res.user.username,
+      email: res.user.email,
+      phone: res.user.phone,
+      address: res.user.address,
+    });
+  }, []);
+
+  const logout = useCallback(async () => {
+    const refresh = localStorage.getItem('refresh_token') ?? '';
+    try {
+      await authApi.logout(refresh);
+    } catch {}
+    clearTokens();
+    setApiUser(null);
     setCart([]);
-  };
+    setUser({ name: '', email: '', phone: '', address: '' });
+  }, []);
 
-  const toggleFavorite = (item: FavoriteItem) => {
-    setFavorites((prevFavorites) => {
-      const exists = prevFavorites.find((fav) => fav.id === item.id);
-      if (exists) {
-        return prevFavorites.filter((fav) => fav.id !== item.id);
+  // ── Cart actions ──────────────────────────────────────────────────────────
+
+  const addToCart = useCallback(
+    (item: Omit<CartItem, 'quantity'>, quantity = 1) => {
+      // Optimistic local update
+      setCart((prev) => {
+        const existing = prev.find((c) => c.id === item.id);
+        if (existing) {
+          return prev.map((c) =>
+            c.id === item.id ? { ...c, quantity: c.quantity + quantity } : c
+          );
+        }
+        return [...prev, { ...item, quantity }];
+      });
+
+      // Sync with backend if authenticated
+      if (apiUser) {
+        cartApi.addItem(item.id, quantity).then((res) => {
+          // Update the cartItemId on the local item so future updates/removes work
+          setCart((prev) =>
+            prev.map((c) => (c.id === item.id ? { ...c, cartItemId: res.id } : c))
+          );
+        }).catch(() => {});
       }
-      return [...prevFavorites, item];
-    });
-  };
+    },
+    [apiUser]
+  );
 
-  const isFavorite = (id: number) => {
-    return favorites.some((fav) => fav.id === id);
-  };
+  const removeFromCart = useCallback(
+    (id: number) => {
+      setCart((prev) => {
+        const item = prev.find((c) => c.id === id);
+        if (item?.cartItemId && apiUser) {
+          cartApi.removeItem(item.cartItemId).catch(() => {});
+        }
+        return prev.filter((c) => c.id !== id);
+      });
+    },
+    [apiUser]
+  );
 
-  const updateUser = (userData: Partial<User>) => {
-    setUser((prevUser) => ({ ...prevUser, ...userData }));
-  };
+  const updateCartQuantity = useCallback(
+    (id: number, quantity: number) => {
+      if (quantity <= 0) {
+        removeFromCart(id);
+        return;
+      }
+      setCart((prev) => {
+        const item = prev.find((c) => c.id === id);
+        if (item?.cartItemId && apiUser) {
+          cartApi.updateItem(item.cartItemId, quantity).catch(() => {});
+        }
+        return prev.map((c) => (c.id === id ? { ...c, quantity } : c));
+      });
+    },
+    [apiUser, removeFromCart]
+  );
 
-  const updatePassword = (oldPassword: string, newPassword: string) => {
-    // In a real app, this would make an API call
-    // For demo purposes, we'll just return true
-    if (oldPassword && newPassword) {
-      return true;
+  const clearCart = useCallback(() => {
+    setCart([]);
+    if (apiUser) {
+      cartApi.clearCart().catch(() => {});
     }
-    return false;
-  };
+  }, [apiUser]);
+
+  // ── Favorites ─────────────────────────────────────────────────────────────
+
+  const toggleFavorite = useCallback((item: FavoriteItem) => {
+    setFavorites((prev) => {
+      const exists = prev.find((f) => f.id === item.id);
+      return exists ? prev.filter((f) => f.id !== item.id) : [...prev, item];
+    });
+  }, []);
+
+  const isFavorite = useCallback(
+    (id: number) => favorites.some((f) => f.id === id),
+    [favorites]
+  );
+
+  // ── Profile ───────────────────────────────────────────────────────────────
+
+  const updateUser = useCallback((userData: Partial<User>) => {
+    setUser((prev) => ({ ...prev, ...userData }));
+    if (apiUser) {
+      const patch: Record<string, string> = {};
+      if (userData.name) {
+        const [first, ...rest] = userData.name.split(' ');
+        patch.first_name = first;
+        patch.last_name = rest.join(' ');
+      }
+      if (userData.phone !== undefined) patch.phone = userData.phone;
+      if (userData.address !== undefined) patch.address = userData.address;
+      authApi.updateProfile(patch).catch(() => {});
+    }
+  }, [apiUser]);
+
+  const updatePassword = useCallback(
+    (oldPassword: string, newPassword: string): boolean => {
+      if (!oldPassword || !newPassword) return false;
+      if (apiUser) {
+        authApi
+          .changePassword({ old_password: oldPassword, new_password: newPassword, new_password2: newPassword })
+          .catch(() => {});
+      }
+      return true;
+    },
+    [apiUser]
+  );
+
+  const syncProfileWithApi = useCallback(async () => {
+    if (!apiUser) return;
+    const profile = await authApi.getProfile();
+    setApiUser(profile);
+    setUser({
+      name: profile.full_name || profile.username,
+      email: profile.email,
+      phone: profile.phone,
+      address: profile.address,
+    });
+  }, [apiUser]);
 
   return (
     <AppContext.Provider
       value={{
+        apiUser,
+        isAuthenticated: !!apiUser,
+        isAuthLoading,
+        login,
+        register,
+        logout,
         cart,
-        favorites,
-        user,
+        cartLoading,
         addToCart,
         removeFromCart,
         updateCartQuantity,
         clearCart,
+        favorites,
         toggleFavorite,
         isFavorite,
+        user,
         updateUser,
         updatePassword,
+        syncProfileWithApi,
       }}
     >
       {children}

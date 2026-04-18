@@ -6,19 +6,38 @@ import logging
 import resend
 from django.conf import settings
 from django.template.loader import render_to_string
+from core.models import AuditLog
 
 logger = logging.getLogger(__name__)
 
 
 def _send(*, to: str, subject: str, template: str, context: dict) -> None:
     html = render_to_string(template, context)
-    resend.api_key = settings.RESEND_API_KEY
-    resend.Emails.send({
-        "from": settings.DEFAULT_FROM_EMAIL,
-        "to": [to],
-        "subject": subject,
-        "html": html,
-    })
+    try:
+        resend.api_key = settings.RESEND_API_KEY
+        resend.Emails.send({
+            "from": settings.DEFAULT_FROM_EMAIL,
+            "to": [to],
+            "subject": subject,
+            "html": html,
+        })
+        AuditLog.objects.create(
+            event='email_sent',
+            level=AuditLog.LEVEL_INFO,
+            actor=to,
+            detail=subject,
+            meta={'template': template},
+        )
+    except Exception as exc:
+        logger.error('Resend error — to=%s subject=%s: %s', to, subject, exc)
+        AuditLog.objects.create(
+            event='email_send_failed',
+            level=AuditLog.LEVEL_ERROR,
+            actor=to,
+            detail=str(exc),
+            meta={'subject': subject, 'template': template},
+        )
+        raise
 
 
 _DELIVERY_LABELS = {

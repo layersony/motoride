@@ -1,6 +1,33 @@
 from django.db import models
 
 
+class AuditLog(models.Model):
+    LEVEL_INFO = 'info'
+    LEVEL_WARNING = 'warning'
+    LEVEL_ERROR = 'error'
+    LEVEL_CHOICES = [
+        ('info', 'Info'),
+        ('warning', 'Warning'),
+        ('error', 'Error'),
+    ]
+
+    event = models.CharField(max_length=100, db_index=True)
+    level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='info', db_index=True)
+    actor = models.CharField(max_length=254, blank=True, help_text='Email or identifier of who triggered this')
+    detail = models.TextField(blank=True)
+    meta = models.JSONField(default=dict, blank=True, help_text='Structured context (order number, error, etc.)')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Audit Log'
+        verbose_name_plural = 'Audit Logs'
+
+    def __str__(self):
+        return f'[{self.level.upper()}] {self.event} — {self.actor or "anonymous"}'
+
+
 class Testimonial(models.Model):
     """Customer testimonials shown on the homepage."""
     name = models.CharField(max_length=100)

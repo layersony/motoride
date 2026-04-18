@@ -1,7 +1,39 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Testimonial, Newsletter, SiteSettings
+from .models import AuditLog, Testimonial, Newsletter, SiteSettings
 from unfold.admin import ModelAdmin
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(ModelAdmin):
+    list_display = ('created_at', 'level_badge', 'event', 'actor', 'short_detail')
+    list_filter = ('level', 'event', 'created_at')
+    search_fields = ('event', 'actor', 'detail')
+    readonly_fields = ('event', 'level', 'actor', 'detail', 'meta', 'ip_address', 'created_at')
+    ordering = ('-created_at',)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def level_badge(self, obj):
+        colours = {'info': '#3b82f6', 'warning': '#f59e0b', 'error': '#ef4444'}
+        colour = colours.get(obj.level, '#6b7280')
+        return format_html(
+            '<span style="background:{};color:#fff;padding:2px 8px;border-radius:4px;'
+            'font-size:11px;font-weight:600;">{}</span>',
+            colour, obj.level.upper(),
+        )
+    level_badge.short_description = 'Level'
+
+    def short_detail(self, obj):
+        return obj.detail[:80] + '…' if len(obj.detail) > 80 else obj.detail
+    short_detail.short_description = 'Detail'
 
 @admin.register(Testimonial)
 class TestimonialAdmin(ModelAdmin):

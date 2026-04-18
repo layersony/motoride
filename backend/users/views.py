@@ -15,7 +15,7 @@ from .serializers import (
     ChangePasswordSerializer, ForgotPasswordSerializer, ResetPasswordSerializer,
     AddressSerializer,
 )
-
+from core.models import AuditLog
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -108,10 +108,23 @@ class ForgotPasswordView(APIView):
                     "subject": "Reset your MotoRide password",
                     "html": html,
                 })
-            except Exception:
-                pass  # fail silently — don't reveal send errors to the caller
+            except Exception as exc:
+                AuditLog.objects.create(
+                    event='email_send_failed',
+                    level=AuditLog.LEVEL_ERROR,
+                    actor=user.email,
+                    detail=str(exc),
+                    meta={'subject': 'Reset your MotoRide password', 'template': 'emails/password_reset.html'},
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                )
         except User.DoesNotExist:
-            pass  # Don't reveal whether the email exists
+            AuditLog.objects.create(
+                event='password_reset_unknown_email',
+                level=AuditLog.LEVEL_WARNING,
+                actor=email,
+                detail=f'Password reset attempted for unregistered email: {email}',
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
 
         return Response({'detail': 'If that email is registered, you will receive a reset link shortly.'})
 

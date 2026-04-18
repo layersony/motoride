@@ -30,13 +30,11 @@ class PaymentStatusView(APIView):
             return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
         except Payment.DoesNotExist:
             return Response({'detail': 'No payment record found.'}, status=status.HTTP_404_NOT_FOUND)
-        print('1')
-        if payment.status != 'completed' and order.order_number:
-            print('2')
+
+        if payment.status != 'completed' and payment.intasend_tracking_id:
             try:
-                state = check_intasend_payment_status(order.order_number)
-                print('3')
-                print('state:', state)
+                state = check_intasend_payment_status(payment.intasend_tracking_id)
+                print(state)
                 if state == 'COMPLETE':
                     payment.status = 'completed'
                     payment.save(update_fields=['status'])

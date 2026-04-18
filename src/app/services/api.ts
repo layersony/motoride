@@ -162,6 +162,7 @@ export interface ApiPayment {
   status_display: string;
   amount: number;
   phone_number: string;
+  intasend_tracking_id: string;
   mpesa_reference: string;
   created_at: string;
   updated_at: string;

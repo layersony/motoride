@@ -10,7 +10,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = (
             'id', 'method', 'status', 'status_display',
-            'amount', 'phone_number', 'mpesa_reference',
+            'amount', 'phone_number', 'intasend_tracking_id', 'mpesa_reference',
             'created_at', 'updated_at',
         )
         read_only_fields = fields

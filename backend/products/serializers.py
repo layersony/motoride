@@ -51,6 +51,11 @@ class ReviewSerializer(serializers.ModelSerializer):
         return obj.user.full_name or obj.user.email
 
 
+def _int_price(value):
+    """Return a price as a rounded integer, or None if not set."""
+    return int(round(float(value))) if value is not None else None
+
+
 class ProductListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for list/card views."""
     category_name = serializers.CharField(source='category.name', read_only=True)
@@ -58,6 +63,8 @@ class ProductListSerializer(serializers.ModelSerializer):
     on_sale = serializers.BooleanField(read_only=True)
     discount = serializers.IntegerField(source='discount_percent', read_only=True)
     image = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
+    original_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -74,6 +81,12 @@ class ProductListSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.image.url)
         return obj.image_url
 
+    def get_price(self, obj):
+        return _int_price(obj.price)
+
+    def get_original_price(self, obj):
+        return _int_price(obj.original_price)
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     """Full serializer for the product detail page."""
@@ -82,6 +95,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     on_sale = serializers.BooleanField(read_only=True)
     discount = serializers.IntegerField(source='discount_percent', read_only=True)
     image = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
+    original_price = serializers.SerializerMethodField()
     images = ProductImageSerializer(many=True, read_only=True)
     specifications = ProductSpecificationSerializer(many=True, read_only=True)
     features = ProductFeatureSerializer(many=True, read_only=True)
@@ -102,6 +117,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         if obj.image and request:
             return request.build_absolute_uri(obj.image.url)
         return obj.image_url
+
+    def get_price(self, obj):
+        return _int_price(obj.price)
+
+    def get_original_price(self, obj):
+        return _int_price(obj.original_price)
 
     def get_reviews(self, obj):
         approved = obj.reviews.filter(is_approved=True)

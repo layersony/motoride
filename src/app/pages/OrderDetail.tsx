@@ -67,26 +67,73 @@ interface MakePaymentModalProps {
 
 function MakePaymentModal({ order, onClose, onSuccess }: MakePaymentModalProps) {
   const [phone, setPhone] = useState(order.shipping_phone || '');
-  const [status, setStatus] = useState<'idle' | 'sending' | 'waiting' | 'failed'>('idle');
+  const [status, setStatus] = useState<'checking' | 'idle' | 'sending' | 'waiting' | 'failed' | 'timeout'>('checking');
   const [errorMsg, setErrorMsg] = useState('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const POLL_TIMEOUT_MS = 90_000; // 1 min 30 sec
 
-  // Clean up polling on unmount
+  // On mount: check if a payment already exists for this order (async)
+  useEffect(() => {
+    let cancelled = false;
+
+    paymentsApi.getStatus(order.id)
+      .then((data) => {
+        if (cancelled) return;
+        if (data.status === 'completed') {
+          // Already paid — close and refresh
+          onSuccess();
+        } else if (data.status === 'processing' || data.status === 'pending') {
+          // STK push already sent — skip form, go straight to waiting
+          if (data.phone_number) setPhone(data.phone_number);
+          setStatus('waiting');
+          startPolling();
+        } else {
+          // failed / cancelled / unknown — show form
+          setStatus('idle');
+        }
+      })
+      .catch(() => {
+        // No payment record yet — show form
+        if (!cancelled) setStatus('idle');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Clean up polling and timeout on unmount
   useEffect(() => {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
+  const stopPolling = () => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
+  };
+
   const startPolling = () => {
+    stopPolling();
+
+    // Hard stop after 1 min 30 sec
+    timeoutRef.current = setTimeout(() => {
+      stopPolling();
+      setStatus('timeout');
+    }, POLL_TIMEOUT_MS);
+
     pollRef.current = setInterval(async () => {
       try {
         const data = await paymentsApi.getStatus(order.id);
         if (data.status === 'completed') {
-          clearInterval(pollRef.current!);
+          stopPolling();
           onSuccess();
         } else if (data.status === 'failed') {
-          clearInterval(pollRef.current!);
+          stopPolling();
           setStatus('failed');
           setErrorMsg('Payment was not completed. Please try again.');
         }
@@ -123,13 +170,19 @@ function MakePaymentModal({ order, onClose, onSuccess }: MakePaymentModalProps) 
         {/* Close */}
         <button
           onClick={onClose}
-          disabled={status === 'waiting'}
+          disabled={status === 'waiting' || status === 'checking'}
           className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-40"
         >
           <X className="w-5 h-5 dark:text-white" />
         </button>
 
-        {status === 'waiting' ? (
+        {status === 'checking' ? (
+          /* Async pre-check in progress */
+          <div className="text-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin text-red-600 mx-auto mb-3" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">Checking payment status…</p>
+          </div>
+        ) : status === 'waiting' ? (
           /* Waiting for STK push */
           <div className="text-center py-4">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
@@ -143,12 +196,41 @@ function MakePaymentModal({ order, onClose, onSuccess }: MakePaymentModalProps) 
             <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
               Enter your M-Pesa PIN to complete payment of{' '}
               <span className="font-semibold text-gray-800 dark:text-white">
-                Ksh{parseFloat(order.total).toLocaleString()}
+                Ksh{order.total.toLocaleString()}
               </span>
             </p>
-            <div className="flex items-center justify-center gap-2 text-gray-400 dark:text-gray-500 text-sm">
+            <div className="flex items-center justify-center gap-2 text-gray-400 dark:text-gray-500 text-sm mb-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               Waiting for confirmation…
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Request expires in 1 min 30 sec
+            </p>
+          </div>
+        ) : status === 'timeout' ? (
+          /* Polling timed out */
+          <div className="text-center py-4">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-100 dark:bg-yellow-900/40 flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-yellow-600" />
+            </div>
+            <h2 className="text-xl font-semibold dark:text-white mb-2">Request Timed Out</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+              We didn't receive a confirmation within 1 min 30 sec. If you completed
+              the payment, your order will update shortly. Otherwise, try again.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 border dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => setStatus('idle')}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
+              >
+                Try Again
+              </button>
             </div>
           </div>
         ) : (
@@ -161,7 +243,7 @@ function MakePaymentModal({ order, onClose, onSuccess }: MakePaymentModalProps) 
               <div>
                 <h2 className="text-lg font-semibold dark:text-white">Make Payment</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Order #{order.order_number} · Ksh{parseFloat(order.total).toLocaleString()}
+                  Order #{order.order_number} · Ksh{order.total.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -386,11 +468,11 @@ export function OrderDetail() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium dark:text-white truncate">{item.product_name}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {item.quantity} × Ksh{parseFloat(item.unit_price).toLocaleString()}
+                      {item.quantity} × Ksh{item.unit_price.toLocaleString()}
                     </p>
                   </div>
                   <span className="text-red-600 font-semibold flex-shrink-0">
-                    Ksh{parseFloat(item.line_total).toLocaleString()}
+                    Ksh{item.line_total.toLocaleString()}
                   </span>
                 </div>
               ))}
@@ -400,23 +482,21 @@ export function OrderDetail() {
             <div className="border-t dark:border-gray-700 mt-4 pt-4 space-y-2 text-sm">
               <div className="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Subtotal</span>
-                <span>Ksh{parseFloat(order.subtotal).toLocaleString()}</span>
+                <span>Ksh{order.subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Shipping ({order.delivery_method_display})</span>
                 <span>
-                  {parseFloat(order.shipping_cost) === 0
-                    ? 'FREE'
-                    : `Ksh${parseFloat(order.shipping_cost).toLocaleString()}`}
+                  {order.shipping_cost === 0 ? 'FREE' : `Ksh${order.shipping_cost.toLocaleString()}`}
                 </span>
               </div>
               <div className="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Tax</span>
-                <span>Ksh{parseFloat(order.tax).toLocaleString()}</span>
+                <span>Ksh{order.tax.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-base font-semibold dark:text-white border-t dark:border-gray-700 pt-2">
                 <span>Total</span>
-                <span className="text-red-600">Ksh{parseFloat(order.total).toLocaleString()}</span>
+                <span className="text-red-600">Ksh{order.total.toLocaleString()}</span>
               </div>
             </div>
           </div>

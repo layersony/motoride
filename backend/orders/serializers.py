@@ -4,12 +4,24 @@ from products.serializers import ProductListSerializer
 from .models import Order, OrderItem, CartItem
 
 
+def _int(value):
+    """Return a monetary value as a rounded integer."""
+    return int(round(float(value))) if value is not None else 0
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
-    line_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    unit_price = serializers.SerializerMethodField()
+    line_total = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
         fields = ('id', 'product', 'product_name', 'product_image', 'quantity', 'unit_price', 'line_total')
+
+    def get_unit_price(self, obj):
+        return _int(obj.unit_price)
+
+    def get_line_total(self, obj):
+        return _int(obj.line_total)
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -18,6 +30,10 @@ class OrderSerializer(serializers.ModelSerializer):
     payment_status_display = serializers.CharField(source='get_payment_status_display', read_only=True)
     delivery_method_display = serializers.CharField(source='get_delivery_method_display', read_only=True)
     payment_method_display = serializers.CharField(source='get_payment_method_display', read_only=True)
+    subtotal = serializers.SerializerMethodField()
+    shipping_cost = serializers.SerializerMethodField()
+    tax = serializers.SerializerMethodField()
+    total = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -31,6 +47,18 @@ class OrderSerializer(serializers.ModelSerializer):
             'tracking_number', 'notes', 'items', 'created_at',
         )
         read_only_fields = ('id', 'order_number', 'created_at')
+
+    def get_subtotal(self, obj):
+        return _int(obj.subtotal)
+
+    def get_shipping_cost(self, obj):
+        return _int(obj.shipping_cost)
+
+    def get_tax(self, obj):
+        return _int(obj.tax)
+
+    def get_total(self, obj):
+        return _int(obj.total)
 
 
 class CreateOrderSerializer(serializers.Serializer):
@@ -73,8 +101,9 @@ class CreateOrderSerializer(serializers.Serializer):
         else:  # standard
             shipping_cost = 0 if subtotal >= free_threshold else standard_cost
 
-        tax = round(float(subtotal) * 0.08, 2)
-        total = float(subtotal) + shipping_cost + tax
+        # Round to whole numbers at source
+        tax = round(float(subtotal) * 0.08)
+        total = round(float(subtotal) + shipping_cost + tax)
 
         order = Order.objects.create(
             user=user,
@@ -115,12 +144,15 @@ class CartItemSerializer(serializers.ModelSerializer):
         write_only=True, queryset=__import__('products.models', fromlist=['Product']).Product.objects.filter(is_active=True),
         source='product'
     )
-    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
         fields = ('id', 'product', 'product_id', 'quantity', 'total_price', 'added_at')
         read_only_fields = ('id', 'added_at')
+
+    def get_total_price(self, obj):
+        return _int(obj.total_price)
 
     def create(self, validated_data):
         user = self.context['request'].user

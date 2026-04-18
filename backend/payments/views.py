@@ -9,7 +9,7 @@ from orders.models import Order
 from .models import Payment
 from .serializers import PaymentSerializer
 
-from payments.services import initiate_mpesa_stk_push
+from payments.services import initiate_mpesa_stk_push, check_intasend_payment_status
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,35 @@ class PaymentStatusView(APIView):
             return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
         except Payment.DoesNotExist:
             return Response({'detail': 'No payment record found.'}, status=status.HTTP_404_NOT_FOUND)
+        print('1')
+        if payment.status != 'completed' and order.order_number:
+            print('2')
+            try:
+                state = check_intasend_payment_status(order.order_number)
+                print('3')
+                print('state:', state)
+                if state == 'COMPLETE':
+                    payment.status = 'completed'
+                    payment.save(update_fields=['status'])
+                    order.payment_status = 'paid'
+                    order.status = 'confirmed'
+                    order.save(update_fields=['payment_status', 'status'])
+                    logger.info('Payment confirmed via proactive check: order %s', order.order_number)
+                    try:
+                        from orders.utils import send_payment_confirmed_email
+                        send_payment_confirmed_email(order)
+                    except Exception as exc:
+                        logger.error('Payment-confirmed email failed: %s', exc)
+
+                elif state in ('FAILED', 'CANCELLED'):
+                    payment.status = 'failed'
+                    payment.save(update_fields=['status'])
+                    order.payment_status = 'failed'
+                    order.save(update_fields=['payment_status'])
+                    logger.info('Payment failed via proactive check: order %s', order.order_number)
+
+            except Exception as exc:
+                logger.error('Proactive IntaSend check error for order %s: %s', order_id, exc)
 
         return Response(PaymentSerializer(payment).data)
 

@@ -1,8 +1,12 @@
+import logging
+
 try:
     from intasend import APIService
     _INTASEND_AVAILABLE = True
 except ImportError:
     _INTASEND_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 
 def _normalize_phone(phone: str) -> str:
@@ -20,6 +24,15 @@ def _normalize_phone(phone: str) -> str:
     return phone
 
 
+def _get_api():
+    from django.conf import settings
+    return APIService(
+        token=settings.INTASEND_API_TOKEN,
+        publishable_key=settings.INTASEND_PUBLISHABLE_KEY,
+        test=settings.INTASEND_TEST_MODE,
+    )
+
+
 def initiate_mpesa_stk_push(order, phone_number: str) -> str:
     """
     Initiates an M-Pesa STK Push via IntaSend.
@@ -32,14 +45,7 @@ def initiate_mpesa_stk_push(order, phone_number: str) -> str:
             'Run: pip install intasend-python'
         )
 
-    from django.conf import settings
-
-    api = APIService(
-        token=settings.INTASEND_API_TOKEN,
-        publishable_key=settings.INTASEND_PUBLISHABLE_KEY,
-        test=settings.INTASEND_TEST_MODE,
-    )
-
+    api = _get_api()
     normalized = _normalize_phone(phone_number)
 
     response = api.collect.mpesa_stk_push(
@@ -52,3 +58,23 @@ def initiate_mpesa_stk_push(order, phone_number: str) -> str:
 
     tracking_id = response.get('invoice', {}).get('tracking_id', '')
     return tracking_id
+
+
+def check_intasend_payment_status(tracking_id: str) -> str | None:
+    if not _INTASEND_AVAILABLE:
+        logger.warning('IntaSend library is not available')
+        return None
+    
+    if not tracking_id:
+        logger.warning('No IntaSend tracking ID provided for status check')
+        return None
+
+    try:
+        api = _get_api()
+        response = api.collect.status(invoice_id=tracking_id)
+        state = response.get('invoice', {}).get('state', '')
+        logger.info('IntaSend status check for %s: %s', tracking_id, state)
+        return state
+    except Exception as exc:
+        logger.warning('IntaSend status check failed for %s: %s', tracking_id, exc)
+        return None

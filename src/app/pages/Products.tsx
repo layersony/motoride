@@ -288,7 +288,7 @@ export function Products() {
                             addToCart({
                               id: product.id,
                               name: product.name,
-                              price: parseFloat(product.price),
+                              price: product.price,
                               image: product.image ?? '',
                               category: product.category_name,
                             });
@@ -303,10 +303,10 @@ export function Products() {
                       <div className="text-sm text-red-600 mb-2">{product.category_name}</div>
                       <h3 className="text-lg mb-2 dark:text-white">{product.name}</h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl text-red-600">Ksh{parseFloat(product.price).toLocaleString()}</span>
+                        <span className="text-2xl text-red-600">Ksh{product.price.toLocaleString()}</span>
                         {product.original_price && (
                           <span className="text-gray-500 line-through">
-                            Ksh{parseFloat(product.original_price).toLocaleString()}
+                            Ksh{product.original_price.toLocaleString()}
                           </span>
                         )}
                       </div>
@@ -344,10 +344,10 @@ export function Products() {
                       </div>
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl text-red-600">Ksh{parseFloat(product.price).toLocaleString()}</span>
+                          <span className="text-2xl text-red-600">Ksh{product.price.toLocaleString()}</span>
                           {product.original_price && (
                             <span className="text-gray-500 line-through">
-                              Ksh{parseFloat(product.original_price).toLocaleString()}
+                              Ksh{product.original_price.toLocaleString()}
                             </span>
                           )}
                         </div>

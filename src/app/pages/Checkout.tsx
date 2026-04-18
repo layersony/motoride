@@ -281,7 +281,7 @@ export function Checkout() {
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 Enter your M-Pesa PIN to complete the payment of{' '}
                 <span className="font-semibold text-gray-800 dark:text-white">
-                  Ksh{total.toFixed(2)}
+                  Ksh{Math.round(total).toLocaleString()}
                 </span>
               </p>
               <div className="flex items-center justify-center gap-2 text-gray-400 dark:text-gray-500 text-sm">
@@ -606,11 +606,11 @@ export function Checkout() {
                 </div>
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Tax (8%)</span>
-                  <span>Ksh{tax.toFixed(2)}</span>
+                  <span>Ksh{Math.round(tax).toLocaleString()}</span>
                 </div>
                 <div className="border-t dark:border-gray-700 pt-3 flex justify-between text-base font-semibold dark:text-white">
                   <span>Total</span>
-                  <span className="text-red-600">Ksh{total.toFixed(2)}</span>
+                  <span className="text-red-600">Ksh{Math.round(total).toLocaleString()}</span>
                 </div>
               </div>
             </div>

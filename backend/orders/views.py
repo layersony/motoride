@@ -97,15 +97,16 @@ class CartView(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         qs = self.get_queryset()
         serializer = self.get_serializer(qs, many=True)
-        subtotal = sum(item.total_price for item in qs)
+        subtotal = round(float(sum(item.total_price for item in qs)))
         shipping_cost = 0 if subtotal >= 100 else 15
-        tax = round(float(subtotal) * 0.08, 2)
+        tax = round(subtotal * 0.08)
+        total = round(subtotal + shipping_cost + tax)
         return Response({
             'items': serializer.data,
-            'subtotal': float(subtotal),
+            'subtotal': subtotal,
             'shipping_cost': shipping_cost,
             'tax': tax,
-            'total': float(subtotal) + shipping_cost + tax,
+            'total': total,
         })
 
 

@@ -141,12 +141,12 @@ export function Cart() {
                 )}
                 <div className="flex justify-between text-gray-700 dark:text-gray-300">
                   <span>Tax (8%)</span>
-                  <span>Ksh{tax.toFixed(2)}</span>
+                  <span>Ksh{Math.round(tax).toLocaleString()}</span>
                 </div>
                 <div className="border-t dark:border-gray-700 pt-4">
                   <div className="flex justify-between text-xl dark:text-white">
                     <span>Total</span>
-                    <span className="text-red-600">Ksh{total.toFixed(2)}</span>
+                    <span className="text-red-600">Ksh{Math.round(total).toLocaleString()}</span>
                   </div>
                 </div>
               </div>

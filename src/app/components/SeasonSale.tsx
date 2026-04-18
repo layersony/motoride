@@ -61,10 +61,10 @@ export function SeasonSale() {
                 <div className="p-5">
                   <h3 className="text-lg mb-3 dark:text-white">{product.name}</h3>
                   <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl text-red-600">Ksh{parseFloat(product.price).toLocaleString()}</span>
+                    <span className="text-2xl text-red-600">Ksh{product.price.toLocaleString()}</span>
                     {product.original_price && (
                       <span className="text-lg text-gray-500 line-through">
-                        Ksh{parseFloat(product.original_price).toLocaleString()}
+                        Ksh{product.original_price.toLocaleString()}
                       </span>
                     )}
                   </div>

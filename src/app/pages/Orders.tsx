@@ -116,7 +116,7 @@ export function Orders() {
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <div className="text-right hidden sm:block">
                       <p className="font-semibold text-red-600">
-                        Ksh{parseFloat(order.total).toLocaleString()}
+                        Ksh{order.total.toLocaleString()}
                       </p>
                       <p className={`text-sm ${PAYMENT_COLORS[order.payment_status] ?? 'text-gray-500'}`}>
                         {order.payment_status_display}
@@ -136,7 +136,7 @@ export function Orders() {
                     {order.delivery_method_display}
                   </span>
                   <span className="sm:hidden font-semibold text-red-600">
-                    Ksh{parseFloat(order.total).toLocaleString()}
+                    Ksh{order.total.toLocaleString()}
                   </span>
                   {order.payment_status !== 'paid' && order.status !== 'cancelled' && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">

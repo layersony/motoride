@@ -139,11 +139,11 @@ export function OrderConfirmation() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium dark:text-white truncate">{item.product_name}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {item.quantity} × Ksh{parseFloat(item.unit_price).toLocaleString()}
+                    {item.quantity} × Ksh{item.unit_price.toLocaleString()}
                   </p>
                 </div>
                 <span className="text-red-600 font-semibold">
-                  Ksh{parseFloat(item.line_total).toLocaleString()}
+                  Ksh{item.line_total.toLocaleString()}
                 </span>
               </div>
             ))}
@@ -153,19 +153,19 @@ export function OrderConfirmation() {
           <div className="border-t dark:border-gray-700 mt-4 pt-4 space-y-2 text-sm">
             <div className="flex justify-between text-gray-600 dark:text-gray-400">
               <span>Subtotal</span>
-              <span>Ksh{parseFloat(order.subtotal).toLocaleString()}</span>
+              <span>Ksh{order.subtotal.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-gray-600 dark:text-gray-400">
               <span>Shipping ({order.delivery_method_display})</span>
-              <span>{parseFloat(order.shipping_cost) === 0 ? 'FREE' : `Ksh${parseFloat(order.shipping_cost).toLocaleString()}`}</span>
+              <span>{order.shipping_cost === 0 ? 'FREE' : `Ksh${order.shipping_cost.toLocaleString()}`}</span>
             </div>
             <div className="flex justify-between text-gray-600 dark:text-gray-400">
               <span>Tax (8%)</span>
-              <span>Ksh{parseFloat(order.tax).toFixed(2)}</span>
+              <span>Ksh{order.tax.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-base font-semibold dark:text-white border-t dark:border-gray-700 pt-2">
               <span>Total</span>
-              <span className="text-red-600">Ksh{parseFloat(order.total).toFixed(2)}</span>
+              <span className="text-red-600">Ksh{order.total.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -208,7 +208,7 @@ export function OrderConfirmation() {
             <ol className="list-decimal list-inside space-y-1">
               <li>We will confirm your order and prepare it for dispatch.</li>
               <li>Our courier will contact you before delivery.</li>
-              <li>Please have the exact amount of <strong className="dark:text-white">Ksh{parseFloat(order.total).toFixed(2)}</strong> ready.</li>
+              <li>Please have the exact amount of <strong className="dark:text-white">Ksh{order.total.toLocaleString()}</strong> ready.</li>
             </ol>
           ) : isPaid ? (
             <ol className="list-decimal list-inside space-y-1">

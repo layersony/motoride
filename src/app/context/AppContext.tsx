@@ -87,7 +87,7 @@ function toCartItem(item: ApiCartItem): CartItem {
   return {
     id: p.id,
     name: p.name,
-    price: parseFloat(p.price),
+    price: p.price,
     image: p.image ?? '',
     category: p.category_name,
     quantity: item.quantity,

@@ -38,7 +38,7 @@ export function ProductDetail() {
     addToCart({
       id: product.id,
       name: product.name,
-      price: parseFloat(product.price),
+      price: product.price,
       image: product.image ?? '',
       category: product.category_name,
     }, quantity);
@@ -49,7 +49,7 @@ export function ProductDetail() {
     toggleFavorite({
       id: product.id,
       name: product.name,
-      price: parseFloat(product.price),
+      price: product.price,
       image: product.image ?? '',
       category: product.category_name,
     });
@@ -59,7 +59,7 @@ export function ProductDetail() {
     if (!product) return;
     const shareData = {
       title: product.name,
-      text: `Check out ${product.name} - Ksh${parseFloat(product.price).toLocaleString()}`,
+      text: `Check out ${product.name} - Ksh${product.price.toLocaleString()}`,
       url: window.location.href,
     };
     try {
@@ -185,10 +185,10 @@ export function ProductDetail() {
 
               {/* Price */}
               <div className="flex items-center gap-4 mb-6">
-                <span className="text-4xl text-red-600">Ksh{parseFloat(product.price).toLocaleString()}</span>
+                <span className="text-4xl text-red-600">Ksh{product.price.toLocaleString()}</span>
                 {product.original_price && (
                   <span className="text-2xl text-gray-500 line-through">
-                    Ksh{parseFloat(product.original_price).toLocaleString()}
+                    Ksh{product.original_price.toLocaleString()}
                   </span>
                 )}
               </div>
@@ -360,7 +360,7 @@ export function ProductDetail() {
                   <div className="p-4">
                     <div className="text-sm text-red-600 mb-2">{rel.category_name}</div>
                     <h3 className="mb-2 dark:text-white">{rel.name}</h3>
-                    <span className="text-xl text-red-600">Ksh{parseFloat(rel.price).toLocaleString()}</span>
+                    <span className="text-xl text-red-600">Ksh{rel.price.toLocaleString()}</span>
                   </div>
                 </Link>
               ))}

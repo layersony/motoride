@@ -21,7 +21,7 @@ export function FeaturedProducts() {
     addToCart({
       id: product.id,
       name: product.name,
-      price: parseFloat(product.price),
+      price: product.price,
       image: product.image ?? '',
       category: product.category_name,
     });
@@ -77,7 +77,7 @@ export function FeaturedProducts() {
                   <div className="text-sm text-red-600 mb-2">{product.category_name}</div>
                   <h3 className="text-lg mb-2 dark:text-white">{product.name}</h3>
                   <div className="flex justify-between items-center">
-                    <span className="text-2xl text-red-600">Ksh{parseFloat(product.price).toLocaleString()}</span>
+                    <span className="text-2xl text-red-600">Ksh{product.price.toLocaleString()}</span>
                     <button
                       onClick={(e) => {
                         e.preventDefault();

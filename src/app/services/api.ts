@@ -112,8 +112,8 @@ export interface ApiProduct {
   category_name: string;
   category_slug: string;
   description?: string;
-  price: string;
-  original_price: string | null;
+  price: number;
+  original_price: number | null;
   image: string | null;
   images?: { id: number; url: string; alt_text: string }[];
   stock?: number;
@@ -143,7 +143,7 @@ export interface ApiCartItem {
   id: number;
   product: ApiProduct;
   quantity: number;
-  total_price: string;
+  total_price: number;
   added_at: string;
 }
 
@@ -160,7 +160,7 @@ export interface ApiPayment {
   method: string;
   status: string;
   status_display: string;
-  amount: string;
+  amount: number;
   phone_number: string;
   mpesa_reference: string;
   created_at: string;
@@ -182,10 +182,10 @@ export interface ApiOrder {
   shipping_email: string;
   shipping_phone: string;
   shipping_address: string;
-  subtotal: string;
-  shipping_cost: string;
-  tax: string;
-  total: string;
+  subtotal: number;
+  shipping_cost: number;
+  tax: number;
+  total: number;
   tracking_number: string;
   notes: string;
   items: ApiOrderItem[];
@@ -200,8 +200,8 @@ export interface ApiOrderItem {
   product_name: string;
   product_image: string;
   quantity: number;
-  unit_price: string;
-  line_total: string;
+  unit_price: number;
+  line_total: number;
 }
 
 export interface ApiTestimonial {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, Moon, Sun, ShoppingCart, LogIn, UserPlus, LogOut, User, Package } from 'lucide-react';
-import { Link, useNavigate } from 'react-router';
+import { Search, Moon, Sun, ShoppingCart, LogIn, UserPlus, LogOut, User, Package, X } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useApp } from '../context/AppContext';
 
 interface HeaderProps {
@@ -15,6 +15,22 @@ export function Header({ darkMode, toggleDarkMode }: HeaderProps) {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get('search') ?? '');
+
+  // Keep input in sync when navigating back to products with a search param
+  useEffect(() => {
+    setQuery(searchParams.get('search') ?? '');
+  }, [searchParams]);
+
+  const submitSearch = (value: string) => {
+    const q = value.trim();
+    if (q) {
+      navigate(`/products?search=${encodeURIComponent(q)}`);
+    } else {
+      navigate('/products');
+    }
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -51,16 +67,30 @@ export function Header({ darkMode, toggleDarkMode }: HeaderProps) {
           </Link>
 
           {/* Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-xl">
+          <form
+            className="hidden md:flex flex-1 max-w-xl"
+            onSubmit={(e) => { e.preventDefault(); submitSearch(query); }}
+          >
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search for motorcycles, gear, and accessories..."
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                className="w-full pl-10 pr-9 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
               />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => { setQuery(''); navigate('/products'); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
-          </div>
+          </form>
 
           {/* Actions */}
           <div className="flex items-center gap-3">
@@ -166,16 +196,30 @@ export function Header({ darkMode, toggleDarkMode }: HeaderProps) {
         </div>
 
         {/* Mobile Search */}
-        <div className="md:hidden mt-4">
+        <form
+          className="md:hidden mt-4"
+          onSubmit={(e) => { e.preventDefault(); submitSearch(query); }}
+        >
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Search motorcycles..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+              className="w-full pl-10 pr-9 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
             />
+            {query && (
+              <button
+                type="button"
+                onClick={() => { setQuery(''); navigate('/products'); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
-        </div>
+        </form>
       </div>
     </header>
   );

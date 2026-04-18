@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router';
-import { SlidersHorizontal, Grid3x3, List, ChevronDown, ShoppingCart, Eye } from 'lucide-react';
+import { SlidersHorizontal, Grid3x3, List, ChevronDown, ShoppingCart, Eye, Search, X } from 'lucide-react';
 import { productsApi, type ApiProduct, type ApiCategory } from '../services/api';
 import { useApp } from '../context/AppContext';
 
@@ -92,13 +92,14 @@ function PriceSlider({ min, max, onMinChange, onMaxChange }: PriceSliderProps) {
 // ── Main component ─────────────────────────────────────────────────────────
 
 export function Products() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { addToCart } = useApp();
 
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);   // first load — shows skeletons
+  const [fetching, setFetching] = useState(false); // subsequent fetches — dims grid
 
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [priceMin, setPriceMin] = useState(PRICE_MIN_BOUND);
@@ -110,9 +111,16 @@ export function Products() {
   const [sortBy, setSortBy] = useState<string>('featured');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') ?? '');
+
+  // Keep search input in sync when URL changes (e.g. from header search)
+  useEffect(() => {
+    setSearchInput(searchParams.get('search') ?? '');
+  }, [searchParams]);
 
   // Debounce ref so slider drag doesn't fire a request on every pixel
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sortByToOrdering = (sort: string): string | undefined => {
     switch (sort) {
@@ -123,8 +131,14 @@ export function Products() {
     }
   };
 
+  const isInitialLoad = useRef(true);
+
   const fetchProducts = useCallback(() => {
-    setLoading(true);
+    if (isInitialLoad.current) {
+      setLoading(true);
+    } else {
+      setFetching(true);
+    }
 
     const filterType = searchParams.get('filter') as 'new' | 'sale' | 'featured' | null;
     const categoryParam = searchParams.get('category');
@@ -155,7 +169,11 @@ export function Products() {
         setTotalCount(res.count);
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setFetching(false);
+        isInitialLoad.current = false;
+      });
   }, [searchParams, selectedCategory, priceMin, priceMax, sortBy]);
 
   // Load categories once
@@ -176,6 +194,32 @@ export function Products() {
   // Keep input strings in sync when slider moves
   useEffect(() => { setMinInput(String(priceMin)); }, [priceMin]);
   useEffect(() => { setMaxInput(String(priceMax)); }, [priceMax]);
+
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (value.trim()) {
+          next.set('search', value.trim());
+        } else {
+          next.delete('search');
+        }
+        return next;
+      });
+    }, 500);
+  };
+
+  const clearSearch = () => {
+    setSearchInput('');
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('search');
+      return next;
+    });
+  };
 
   const handleSliderMin = (v: number) => {
     setPriceMin(v);
@@ -207,6 +251,8 @@ export function Products() {
     setPriceMax(PRICE_MAX_BOUND);
     setMinInput(String(PRICE_MIN_BOUND));
     setMaxInput(String(PRICE_MAX_BOUND));
+    setSearchInput('');
+    setSearchParams(new URLSearchParams());
   };
 
   const getPageTitle = () => {
@@ -234,8 +280,13 @@ export function Products() {
       <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl md:text-4xl mb-2 dark:text-white">{getPageTitle()}</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {loading ? 'Loading...' : `${totalCount} ${totalCount === 1 ? 'product' : 'products'} found`}
+          <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+            {loading
+              ? 'Loading...'
+              : `${totalCount} ${totalCount === 1 ? 'product' : 'products'} found`}
+            {fetching && (
+              <span className="inline-block w-3 h-3 rounded-full border-2 border-red-600 border-t-transparent animate-spin" />
+            )}
           </p>
         </div>
       </div>
@@ -351,6 +402,26 @@ export function Products() {
                 Filters
               </button>
 
+              {/* Search input */}
+              <div className="relative flex-1 min-w-[180px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  placeholder="Search products…"
+                  className="w-full pl-9 pr-8 py-2 text-sm border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
+                />
+                {searchInput && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
               <div className="flex items-center gap-2">
                 <span className="text-gray-600 dark:text-gray-400">Sort by:</span>
                 <div className="relative">
@@ -392,14 +463,14 @@ export function Products() {
               </div>
             </div>
 
-            {/* Loading skeleton */}
+            {/* Loading skeleton — only on first load */}
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="bg-white dark:bg-gray-800 rounded-lg h-80 animate-pulse border dark:border-gray-700" />
                 ))}
               </div>
-            ) : products.length === 0 ? (
+            ) : products.length === 0 && !fetching ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg p-12 text-center border dark:border-gray-700">
                 <p className="text-xl text-gray-600 dark:text-gray-400">No products found</p>
                 <button
@@ -410,7 +481,7 @@ export function Products() {
                 </button>
               </div>
             ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 transition-opacity duration-300 ${fetching ? 'opacity-50' : 'opacity-100'}`}>
                 {products.map((product) => (
                   <Link
                     key={product.id}
@@ -465,7 +536,7 @@ export function Products() {
                 ))}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className={`space-y-4 transition-opacity duration-300 ${fetching ? 'opacity-50' : 'opacity-100'}`}>
                 {products.map((product) => (
                   <Link
                     key={product.id}

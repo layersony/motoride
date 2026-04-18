@@ -9,6 +9,8 @@ import { ProductDetail } from './pages/ProductDetail';
 import { Cart } from './pages/Cart';
 import { Checkout } from './pages/Checkout';
 import { OrderConfirmation } from './pages/OrderConfirmation';
+import { Orders } from './pages/Orders';
+import { OrderDetail } from './pages/OrderDetail';
 import { Profile } from './pages/Profile';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
@@ -44,6 +46,8 @@ export default function App() {
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/orders/:id" element={<OrderDetail />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />

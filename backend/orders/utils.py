@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def _currency(value) -> str:
-    return f'${float(value):,.2f}'
+    return f'Ksh{float(value):,.2f}'
 
 
 def send_order_confirmation_email(order) -> None:
@@ -84,7 +84,7 @@ def send_payment_confirmed_email(order) -> None:
 
 Great news! We have received your M-Pesa payment for order {order.order_number}.
 
-TOTAL PAID: ${float(order.total):,.2f}
+TOTAL PAID: Ksh {float(order.total):,.2f}
 
 Your order is now being processed and will be shipped soon.
 

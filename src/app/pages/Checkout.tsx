@@ -35,7 +35,7 @@ const DELIVERY_OPTIONS: {
     description: '3–5 business days',
     icon: Truck,
     price: (s) => (s >= 100 ? 0 : 15),
-    priceLabel: (s) => (s >= 100 ? 'FREE' : '$15.00'),
+    priceLabel: (s) => (s >= 100 ? 'FREE' : 'Ksh15.00'),
   },
   {
     id: 'express',
@@ -43,7 +43,7 @@ const DELIVERY_OPTIONS: {
     description: '1–2 business days',
     icon: Zap,
     price: () => 35,
-    priceLabel: () => '$35.00',
+    priceLabel: () => 'Ksh35.00',
   },
   {
     id: 'pickup',
@@ -514,7 +514,7 @@ export function Checkout() {
                         <p className="text-sm text-gray-500 dark:text-gray-400">{item.category} × {item.quantity}</p>
                       </div>
                       <span className="text-red-600 font-semibold">
-                        ${(item.price * item.quantity).toLocaleString()}
+                        Ksh{(item.price * item.quantity).toLocaleString()}
                       </span>
                     </div>
                   ))}
@@ -591,26 +591,26 @@ export function Checkout() {
                 {cart.map((item) => (
                   <div key={item.id} className="flex justify-between text-gray-600 dark:text-gray-400">
                     <span className="truncate max-w-[70%]">{item.name} ×{item.quantity}</span>
-                    <span>${(item.price * item.quantity).toLocaleString()}</span>
+                    <span>Ksh{(item.price * item.quantity).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
               <div className="border-t dark:border-gray-700 pt-3 space-y-2 text-sm">
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Subtotal</span>
-                  <span>${subtotal.toLocaleString()}</span>
+                  <span>Ksh{subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Shipping</span>
-                  <span>{shippingCost === 0 ? 'FREE' : `$${shippingCost}`}</span>
+                  <span>{shippingCost === 0 ? 'FREE' : `Ksh${shippingCost}`}</span>
                 </div>
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>Tax (8%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>Ksh{tax.toFixed(2)}</span>
                 </div>
                 <div className="border-t dark:border-gray-700 pt-3 flex justify-between text-base font-semibold dark:text-white">
                   <span>Total</span>
-                  <span className="text-red-600">${total.toFixed(2)}</span>
+                  <span className="text-red-600">Ksh{total.toFixed(2)}</span>
                 </div>
               </div>
             </div>

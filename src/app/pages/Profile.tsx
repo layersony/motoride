@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { User, Heart, Lock, MapPin, Phone, Mail, ShoppingBag, Eye } from 'lucide-react';
+import { User, Heart, Lock, MapPin, Phone, Mail, ShoppingBag, Eye, Package } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export function Profile() {
@@ -90,6 +90,13 @@ export function Profile() {
                     <Heart className="w-5 h-5" />
                     Favorites ({favorites.length})
                   </button>
+                  <Link
+                    to="/orders"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <Package className="w-5 h-5" />
+                    My Orders
+                  </Link>
                   <button
                     onClick={() => setActiveTab('password')}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
@@ -288,7 +295,7 @@ export function Profile() {
                             <h3 className="mb-2 dark:text-white">{product.name}</h3>
                             <div className="flex justify-between items-center">
                               <span className="text-xl text-red-600">
-                                ${product.price.toLocaleString()}
+                                Ksh{product.price.toLocaleString()}
                               </span>
                               <button
                                 onClick={() => toggleFavorite(product)}

@@ -19,15 +19,15 @@ export function Products() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
 
-  const priceRanges = ['All', 'Under $500', '$500 - $1000', '$1000 - $5000', '$5000 - $10000', 'Over $10000'];
+  const priceRanges = ['All', 'Under Ksh500', 'Ksh500 - Ksh1000', 'Ksh1000 - Ksh5000', 'Ksh5000 - Ksh10000', 'Over Ksh10000'];
 
   const priceRangeToParams = (range: string): { min_price?: number; max_price?: number } => {
     switch (range) {
-      case 'Under $500': return { max_price: 500 };
-      case '$500 - $1000': return { min_price: 500, max_price: 1000 };
-      case '$1000 - $5000': return { min_price: 1000, max_price: 5000 };
-      case '$5000 - $10000': return { min_price: 5000, max_price: 10000 };
-      case 'Over $10000': return { min_price: 10000 };
+      case 'Under Ksh500': return { max_price: 500 };
+      case 'Ksh500 - Ksh1000': return { min_price: 500, max_price: 1000 };
+      case 'Ksh1000 - Ksh5000': return { min_price: 1000, max_price: 5000 };
+      case 'Ksh5000 - Ksh10000': return { min_price: 5000, max_price: 10000 };
+      case 'Over Ksh10000': return { min_price: 10000 };
       default: return {};
     }
   };
@@ -303,10 +303,10 @@ export function Products() {
                       <div className="text-sm text-red-600 mb-2">{product.category_name}</div>
                       <h3 className="text-lg mb-2 dark:text-white">{product.name}</h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl text-red-600">${parseFloat(product.price).toLocaleString()}</span>
+                        <span className="text-2xl text-red-600">Ksh{parseFloat(product.price).toLocaleString()}</span>
                         {product.original_price && (
                           <span className="text-gray-500 line-through">
-                            ${parseFloat(product.original_price).toLocaleString()}
+                            Ksh{parseFloat(product.original_price).toLocaleString()}
                           </span>
                         )}
                       </div>
@@ -344,10 +344,10 @@ export function Products() {
                       </div>
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl text-red-600">${parseFloat(product.price).toLocaleString()}</span>
+                          <span className="text-2xl text-red-600">Ksh{parseFloat(product.price).toLocaleString()}</span>
                           {product.original_price && (
                             <span className="text-gray-500 line-through">
-                              ${parseFloat(product.original_price).toLocaleString()}
+                              Ksh{parseFloat(product.original_price).toLocaleString()}
                             </span>
                           )}
                         </div>

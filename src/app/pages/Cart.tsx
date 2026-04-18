@@ -112,7 +112,7 @@ export function Cart() {
                       </button>
                     </div>
                     <span className="text-xl text-red-600">
-                      ${(item.price * item.quantity).toLocaleString()}
+                      Ksh{(item.price * item.quantity).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -128,11 +128,11 @@ export function Cart() {
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-gray-700 dark:text-gray-300">
                   <span>Subtotal</span>
-                  <span>${subtotal.toLocaleString()}</span>
+                  <span>Ksh{subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-gray-700 dark:text-gray-300">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? 'FREE' : `$${shipping}`}</span>
+                  <span>{shipping === 0 ? 'FREE' : `Ksh${shipping}`}</span>
                 </div>
                 {shipping === 0 && subtotal > 0 && (
                   <p className="text-sm text-green-600 dark:text-green-500">
@@ -141,12 +141,12 @@ export function Cart() {
                 )}
                 <div className="flex justify-between text-gray-700 dark:text-gray-300">
                   <span>Tax (8%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>Ksh{tax.toFixed(2)}</span>
                 </div>
                 <div className="border-t dark:border-gray-700 pt-4">
                   <div className="flex justify-between text-xl dark:text-white">
                     <span>Total</span>
-                    <span className="text-red-600">${total.toFixed(2)}</span>
+                    <span className="text-red-600">Ksh{total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

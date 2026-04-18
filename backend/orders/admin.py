@@ -11,7 +11,7 @@ class OrderItemInline(admin.TabularInline):
     can_delete = False
 
     def line_total_display(self, obj):
-        return f'${obj.line_total:,.2f}'
+        return f'Ksh {obj.line_total:,.2f}'
     line_total_display.short_description = 'Line Total'
 
 
@@ -71,7 +71,7 @@ class OrderAdmin(ModelAdmin):
     item_count.short_description = 'Items'
 
     def total_display(self, obj):
-        return f'${obj.total:,.2f}'
+        return f'Ksh {obj.total:,.2f}'
     total_display.short_description = 'Total'
 
 
@@ -84,5 +84,5 @@ class CartItemAdmin(ModelAdmin):
     readonly_fields = ('added_at',)
 
     def total_price_display(self, obj):
-        return f'${obj.total_price:,.2f}'
+        return f'Ksh {obj.total_price:,.2f}'
     total_price_display.short_description = 'Total'

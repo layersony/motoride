@@ -56,7 +56,16 @@ def initiate_mpesa_stk_push(order, phone_number: str) -> str:
         api_ref=order.order_number,
     )
 
-    tracking_id = response.get('invoice', {}).get('tracking_id', '')
+    logger.info('IntaSend STK push response for order %s: %s', order.order_number, response)
+    
+    invoice = response.get('invoice', {})
+
+    tracking_id = invoice.get('tracking_id') or invoice.get('invoice_id', '')
+
+    if not tracking_id:
+        logger.error('IntaSend STK push returned no tracking/invoice ID. Full response: %s', response)
+        raise RuntimeError('IntaSend did not return a tracking ID. Check API response logs.')
+
     return tracking_id
 
 
@@ -72,8 +81,8 @@ def check_intasend_payment_status(tracking_id: str) -> str | None:
     try:
         api = _get_api()
         response = api.collect.status(invoice_id=tracking_id)
+        logger.info('IntaSend status response for %s: %s', tracking_id, response)
         state = response.get('invoice', {}).get('state', '')
-        logger.info('IntaSend status check for %s: %s', tracking_id, state)
         return state
     except Exception as exc:
         logger.warning('IntaSend status check failed for %s: %s', tracking_id, exc)

@@ -34,7 +34,7 @@ class PaymentStatusView(APIView):
         if payment.status != 'completed' and payment.intasend_tracking_id:
             try:
                 state = check_intasend_payment_status(payment.intasend_tracking_id)
-                print(state)
+                
                 if state == 'COMPLETE':
                     payment.status = 'completed'
                     payment.save(update_fields=['status'])

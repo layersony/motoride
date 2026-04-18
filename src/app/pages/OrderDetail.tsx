@@ -67,13 +67,13 @@ interface MakePaymentModalProps {
 
 function MakePaymentModal({ order, onClose, onSuccess }: MakePaymentModalProps) {
   const [phone, setPhone] = useState(order.shipping_phone || '');
-  const [status, setStatus] = useState<'checking' | 'idle' | 'sending' | 'waiting' | 'failed' | 'timeout'>('checking');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'waiting' | 'failed' | 'timeout'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const POLL_TIMEOUT_MS = 90_000; // 1 min 30 sec
+  const POLL_TIMEOUT_MS = 30_000; // 1 min 30 sec
 
-  // On mount: check if a payment already exists for this order (async)
+  // On mount: background pre-check — show the form immediately, react if something is found
   useEffect(() => {
     let cancelled = false;
 
@@ -81,26 +81,18 @@ function MakePaymentModal({ order, onClose, onSuccess }: MakePaymentModalProps) 
       .then((data) => {
         if (cancelled) return;
         if (data.status === 'completed') {
-          // Already paid — close and refresh
           onSuccess();
         } else if (data.status === 'processing' || data.status === 'pending') {
-          // STK push already sent — skip form, go straight to waiting
+          // STK push already in flight — switch to waiting view
           if (data.phone_number) setPhone(data.phone_number);
           setStatus('waiting');
           startPolling();
-        } else {
-          // failed / cancelled / unknown — show form
-          setStatus('idle');
         }
+        // failed / unknown — user is already seeing the form, nothing to do
       })
-      .catch(() => {
-        // No payment record yet — show form
-        if (!cancelled) setStatus('idle');
-      });
+      .catch(() => { /* no payment yet — form is already showing */ });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -170,19 +162,13 @@ function MakePaymentModal({ order, onClose, onSuccess }: MakePaymentModalProps) 
         {/* Close */}
         <button
           onClick={onClose}
-          disabled={status === 'waiting' || status === 'checking'}
+          disabled={status === 'waiting'}
           className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-40"
         >
           <X className="w-5 h-5 dark:text-white" />
         </button>
 
-        {status === 'checking' ? (
-          /* Async pre-check in progress */
-          <div className="text-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin text-red-600 mx-auto mb-3" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">Checking payment status…</p>
-          </div>
-        ) : status === 'waiting' ? (
+        {status === 'waiting' ? (
           /* Waiting for STK push */
           <div className="text-center py-4">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
@@ -322,7 +308,20 @@ export function OrderDetail() {
     if (!id || !isAuthenticated) return;
     ordersApi
       .getOrder(Number(id))
-      .then(setOrder)
+      .then((o) => {
+        setOrder(o);
+        // Background lookup: if not yet paid, silently check IntaSend
+        if (o.payment_status !== 'paid' && o.status !== 'cancelled') {
+          paymentsApi.getStatus(o.id)
+            .then((payment) => {
+              if (payment.status === 'completed') {
+                // Payment confirmed — refresh order silently
+                ordersApi.getOrder(o.id).then(setOrder).catch(() => {});
+              }
+            })
+            .catch(() => {}); // no payment record yet — ignore
+        }
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   };

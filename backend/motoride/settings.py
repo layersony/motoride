@@ -169,3 +169,9 @@ SHIPPING_FREE_THRESHOLD = int(os.getenv('SHIPPING_FREE_THRESHOLD', '100'))
 
 # Frontend URL (used for password-reset links in emails)
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
+UNFOLD = {
+    "SITE_TITLE": "MotoRide",
+    "SITE_HEADER": "MotoRide Admin",
+    "SITE_SUBHEADER": "Site Management"
+}

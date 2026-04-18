@@ -3,6 +3,7 @@ certifi==2026.2.25
 charset-normalizer==3.4.7
 Django==6.0.4
 django-cors-headers==4.9.0
+django-unfold==0.90.0
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
 idna==3.11

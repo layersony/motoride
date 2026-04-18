@@ -1,10 +1,10 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Testimonial, Newsletter, SiteSettings
-
+from unfold.admin import ModelAdmin
 
 @admin.register(Testimonial)
-class TestimonialAdmin(admin.ModelAdmin):
+class TestimonialAdmin(ModelAdmin):
     list_display = ('name', 'location', 'rating_stars', 'is_active', 'sort_order', 'created_at')
     list_filter = ('is_active', 'rating')
     search_fields = ('name', 'location', 'text')
@@ -18,7 +18,7 @@ class TestimonialAdmin(admin.ModelAdmin):
 
 
 @admin.register(Newsletter)
-class NewsletterAdmin(admin.ModelAdmin):
+class NewsletterAdmin(ModelAdmin):
     list_display = ('email', 'is_active', 'subscribed_at')
     list_filter = ('is_active', 'subscribed_at')
     search_fields = ('email',)
@@ -34,7 +34,7 @@ class NewsletterAdmin(admin.ModelAdmin):
 
 
 @admin.register(SiteSettings)
-class SiteSettingsAdmin(admin.ModelAdmin):
+class SiteSettingsAdmin(ModelAdmin):
     fieldsets = (
         ('Branding', {
             'fields': ('site_name', 'tagline'),

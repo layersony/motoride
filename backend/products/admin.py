@@ -1,10 +1,10 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Category, Product, ProductImage, ProductSpecification, ProductFeature, Review
-
+from unfold.admin import ModelAdmin
 
 @admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
+class CategoryAdmin(ModelAdmin):
     list_display = ('name', 'slug', 'product_count', 'is_active', 'sort_order')
     list_filter = ('is_active',)
     search_fields = ('name', 'description')
@@ -35,7 +35,7 @@ class ProductFeatureInline(admin.TabularInline):
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(ModelAdmin):
     list_display = (
         'thumbnail', 'name', 'category', 'price', 'original_price',
         'stock', 'in_stock', 'is_new', 'is_featured', 'on_sale_display',
@@ -97,7 +97,7 @@ class ProductAdmin(admin.ModelAdmin):
 
 
 @admin.register(Review)
-class ReviewAdmin(admin.ModelAdmin):
+class ReviewAdmin(ModelAdmin):
     list_display = ('product', 'user', 'rating', 'title', 'is_approved', 'created_at')
     list_filter = ('is_approved', 'rating', 'created_at')
     search_fields = ('product__name', 'user__email', 'title', 'body')

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Order, OrderItem, CartItem
-
+from unfold.admin import ModelAdmin
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
@@ -16,7 +16,7 @@ class OrderItemInline(admin.TabularInline):
 
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(ModelAdmin):
     list_display = (
         'order_number', 'user', 'status_badge', 'payment_status_badge',
         'item_count', 'total_display', 'created_at',
@@ -76,7 +76,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 
 @admin.register(CartItem)
-class CartItemAdmin(admin.ModelAdmin):
+class CartItemAdmin(ModelAdmin):
     list_display = ('user', 'product', 'quantity', 'total_price_display', 'added_at')
     list_filter = ('added_at',)
     search_fields = ('user__email', 'product__name')

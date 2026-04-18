@@ -42,12 +42,12 @@ def initiate_mpesa_stk_push(order, phone_number: str) -> str:
 
     normalized = _normalize_phone(phone_number)
 
-    response = api.payments.mpesa_stk_push(
+    response = api.collect.mpesa_stk_push(
         phone_number=normalized,
         email=order.shipping_email,
-        amount=int(order.total),           # whole KES amount
+        amount=int(order.total),
         narrative=f'Payment for Order {order.order_number}',
-        api_ref=order.order_number,        # unique per order — used in callback
+        api_ref=order.order_number,
     )
 
     tracking_id = response.get('invoice', {}).get('tracking_id', '')

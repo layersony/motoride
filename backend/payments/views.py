@@ -9,6 +9,8 @@ from orders.models import Order
 from .models import Payment
 from .serializers import PaymentSerializer
 
+from payments.services import initiate_mpesa_stk_push
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,6 +32,54 @@ class PaymentStatusView(APIView):
             return Response({'detail': 'No payment record found.'}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(PaymentSerializer(payment).data)
+
+class InitiatePaymentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, order_id):
+        try:
+            order = Order.objects.get(id=order_id, user=request.user)
+        except Order.DoesNotExist:
+            return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if order.payment_status == 'paid':
+            return Response({'detail': 'Order is already paid.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        phone_number = request.data.get('phone_number', '').strip()
+        if not phone_number:
+            return Response({'detail': 'phone_number is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        payment, _ = Payment.objects.get_or_create(
+            order=order,
+            defaults={
+                'method': 'mpesa',
+                'amount': order.total,
+                'phone_number': phone_number,
+            },
+        )
+
+        payment.method = 'mpesa'
+        payment.phone_number = phone_number
+        payment.status = 'processing'
+        payment.save(update_fields=['method', 'phone_number', 'status'])
+
+        order.payment_method = 'mpesa'
+        order.save(update_fields=['payment_method'])
+
+        try:
+            tracking_id = initiate_mpesa_stk_push(order, phone_number)
+            payment.intasend_tracking_id = tracking_id
+            payment.save(update_fields=['intasend_tracking_id'])
+        except Exception as exc:
+            logger.error('M-Pesa STK push failed for %s: %s', order.order_number, exc)
+            payment.status = 'failed'
+            payment.save(update_fields=['status'])
+            return Response(
+                {'detail': f'Failed to initiate M-Pesa payment: {exc}'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response(PaymentSerializer(payment).data, status=status.HTTP_200_OK)
 
 
 class MpesaCallbackView(APIView):

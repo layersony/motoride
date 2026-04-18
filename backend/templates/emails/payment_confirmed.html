@@ -1,0 +1,36 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Payment Received — {{ order.order_number }} | MotoRide{% endblock %}
+
+{% block body %}
+  <h2 style="margin:0 0 4px;font-size:20px;color:#111827;">Payment Received!</h2>
+  <p style="margin:0 0 24px;color:#6b7280;">
+    Hi {{ order.shipping_name }}, great news — we have received your M-Pesa payment.
+  </p>
+
+  <table width="100%" cellpadding="0" cellspacing="0"
+         style="background:#f0fdf4;border-radius:6px;padding:20px;margin-bottom:24px;">
+    <tr>
+      <td style="font-size:14px;color:#166534;">Order Number</td>
+      <td style="font-size:14px;font-weight:700;color:#166534;text-align:right;">
+        {{ order.order_number }}
+      </td>
+    </tr>
+    <tr>
+      <td style="font-size:22px;font-weight:700;color:#15803d;padding-top:12px;">Total Paid</td>
+      <td style="font-size:22px;font-weight:700;color:#15803d;text-align:right;padding-top:12px;">
+        Ksh {{ order.total|floatformat:2 }}
+      </td>
+    </tr>
+  </table>
+
+  <p style="margin:0 0 8px;color:#374151;font-size:14px;">
+    Your order is now <strong>confirmed</strong> and being processed.
+    We will notify you once it has been shipped.
+  </p>
+
+  <p style="margin:24px 0 0;color:#6b7280;font-size:14px;">
+    Thank you for shopping with MotoRide!<br />
+    <strong style="color:#111827;">— The MotoRide Team</strong>
+  </p>
+{% endblock %}

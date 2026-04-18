@@ -1,6 +1,7 @@
+import resend
 from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
 from django.conf import settings
+from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import generics, status
@@ -94,20 +95,21 @@ class ForgotPasswordView(APIView):
             token = default_token_generator.make_token(user)
             frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
             reset_url = f'{frontend_url}/reset-password?uid={uid}&token={token}'
+            html = render_to_string('emails/password_reset.html', {
+                'name': user.first_name or user.username,
+                'reset_url': reset_url,
+            })
 
-            send_mail(
-                subject='Reset your MotoRide password',
-                message=(
-                    f'Hi {user.first_name or user.username},\n\n'
-                    f'Click the link below to reset your password (expires in 1 hour):\n\n'
-                    f'{reset_url}\n\n'
-                    f'If you did not request this, you can safely ignore this email.\n\n'
-                    f'— The MotoRide Team'
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=True,
-            )
+            try:
+                resend.api_key = settings.RESEND_API_KEY
+                resend.Emails.send({
+                    "from": settings.DEFAULT_FROM_EMAIL,
+                    "to": [user.email],
+                    "subject": "Reset your MotoRide password",
+                    "html": html,
+                })
+            except Exception:
+                pass  # fail silently — don't reveal send errors to the caller
         except User.DoesNotExist:
             pass  # Don't reveal whether the email exists
 

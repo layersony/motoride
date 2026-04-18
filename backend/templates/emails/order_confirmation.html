@@ -1,0 +1,122 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Order Confirmed — {{ order.order_number }} | MotoRide{% endblock %}
+
+{% block body %}
+  <h2 style="margin:0 0 4px;font-size:20px;color:#111827;">Order Confirmed!</h2>
+  <p style="margin:0 0 24px;color:#6b7280;">Hi {{ order.shipping_name }}, thank you for your order.</p>
+
+  <!-- Order meta -->
+  <table width="100%" cellpadding="0" cellspacing="0"
+         style="background:#f9fafb;border-radius:6px;padding:16px;margin-bottom:24px;">
+    <tr>
+      <td style="font-size:13px;color:#6b7280;">Order Number</td>
+      <td style="font-size:13px;font-weight:700;color:#111827;text-align:right;">
+        {{ order.order_number }}
+      </td>
+    </tr>
+    <tr>
+      <td style="font-size:13px;color:#6b7280;padding-top:6px;">Date</td>
+      <td style="font-size:13px;color:#374151;text-align:right;padding-top:6px;">
+        {{ order.created_at|date:"d F Y, H:i" }} UTC
+      </td>
+    </tr>
+  </table>
+
+  <!-- Items -->
+  <h3 style="margin:0 0 12px;font-size:15px;color:#111827;">Items Ordered</h3>
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+    <thead>
+      <tr style="background:#f3f4f6;">
+        <th style="padding:8px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;
+                   text-transform:uppercase;">Product</th>
+        <th style="padding:8px;text-align:center;font-size:12px;color:#6b7280;font-weight:600;
+                   text-transform:uppercase;">Qty</th>
+        <th style="padding:8px;text-align:right;font-size:12px;color:#6b7280;font-weight:600;
+                   text-transform:uppercase;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in order.items.all %}
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#374151;">
+          {{ item.product_name }}
+        </td>
+        <td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#374151;text-align:center;">
+          x{{ item.quantity }}
+        </td>
+        <td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#374151;text-align:right;">
+          Ksh {{ item.line_total|floatformat:2 }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Totals -->
+  <table width="100%" cellpadding="0" cellspacing="0"
+         style="border-top:2px solid #e5e7eb;padding-top:12px;margin-bottom:24px;">
+    <tr>
+      <td style="padding:4px 0;color:#6b7280;font-size:14px;">Subtotal</td>
+      <td style="padding:4px 0;color:#374151;font-size:14px;text-align:right;">
+        Ksh {{ order.subtotal|floatformat:2 }}
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0;color:#6b7280;font-size:14px;">Shipping</td>
+      <td style="padding:4px 0;color:#374151;font-size:14px;text-align:right;">
+        Ksh {{ order.shipping_cost|floatformat:2 }}
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0;color:#6b7280;font-size:14px;">Tax (8%)</td>
+      <td style="padding:4px 0;color:#374151;font-size:14px;text-align:right;">
+        Ksh {{ order.tax|floatformat:2 }}
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:8px 0 0;color:#111827;font-size:16px;font-weight:700;">Total</td>
+      <td style="padding:8px 0 0;color:#f97316;font-size:16px;font-weight:700;text-align:right;">
+        Ksh {{ order.total|floatformat:2 }}
+      </td>
+    </tr>
+  </table>
+
+  <!-- Delivery & shipping address -->
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+    <tr>
+      <td width="50%" style="vertical-align:top;padding-right:12px;">
+        <p style="margin:0 0 4px;font-size:12px;color:#6b7280;font-weight:600;
+                  text-transform:uppercase;">Delivery Method</p>
+        <p style="margin:0;color:#374151;font-size:14px;">{{ delivery_label }}</p>
+      </td>
+      <td width="50%" style="vertical-align:top;">
+        <p style="margin:0 0 4px;font-size:12px;color:#6b7280;font-weight:600;
+                  text-transform:uppercase;">Ship To</p>
+        <p style="margin:0;color:#374151;font-size:14px;">
+          {{ order.shipping_name }}<br />
+          {{ order.shipping_address }}<br />
+          {{ order.shipping_phone }}
+        </p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Payment note -->
+  {% if order.payment_method == 'mpesa' %}
+  <p style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;
+            border-radius:4px;color:#92400e;margin:0;">
+    We are awaiting your M-Pesa payment. Please check your phone for the STK push prompt.
+  </p>
+  {% else %}
+  <p style="background:#f0fdf4;border-left:4px solid #22c55e;padding:12px 16px;
+            border-radius:4px;color:#166534;margin:0;">
+    Your order will be paid on delivery.
+  </p>
+  {% endif %}
+
+  <p style="margin:24px 0 0;color:#6b7280;font-size:14px;">
+    Thank you for riding with MotoRide!<br />
+    <strong style="color:#111827;">— The MotoRide Team</strong>
+  </p>
+{% endblock %}

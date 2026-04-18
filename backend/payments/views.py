@@ -33,12 +33,6 @@ class PaymentStatusView(APIView):
 
 
 class MpesaCallbackView(APIView):
-    """
-    POST /api/payments/mpesa/callback/
-    Webhook called by InstaSend when an M-Pesa payment status changes.
-    Must be publicly accessible (no auth).
-    Configure this URL in your InstaSend dashboard.
-    """
     permission_classes = [AllowAny]
     authentication_classes = []
 
@@ -67,7 +61,7 @@ class MpesaCallbackView(APIView):
                 payment.status = 'completed'
                 payment.mpesa_reference = mpesa_reference
                 if tracking_id:
-                    payment.instasend_tracking_id = tracking_id
+                    payment.intasend_tracking_id = tracking_id
                 payment.save()
 
                 order = payment.order
@@ -92,5 +86,5 @@ class MpesaCallbackView(APIView):
         except Exception as exc:
             logger.error('Error processing M-Pesa callback: %s', exc)
 
-        # Always return 200 so InstaSend stops retrying
+        # Always return 200 so IntaSend stops retrying
         return Response({'status': 'ok'})

@@ -60,9 +60,9 @@ class CreateOrderView(generics.CreateAPIView):
             try:
                 from payments.services import initiate_mpesa_stk_push
                 tracking_id = initiate_mpesa_stk_push(order, mpesa_phone)
-                payment.instasend_tracking_id = tracking_id
+                payment.intasend_tracking_id = tracking_id
                 payment.status = 'processing'
-                payment.save(update_fields=['instasend_tracking_id', 'status'])
+                payment.save(update_fields=['intasend_tracking_id', 'status'])
             except Exception as exc:
                 logger.error('M-Pesa STK push failed for %s: %s', order.order_number, exc)
                 payment.status = 'failed'

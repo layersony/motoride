@@ -1,20 +1,8 @@
-"""
-InstaSend M-Pesa integration service.
-
-Required environment variables:
-  INSTASEND_API_TOKEN        - Your InstaSend API token
-  INSTASEND_PUBLISHABLE_KEY  - Your InstaSend publishable key
-  INSTASEND_TEST_MODE        - True (sandbox) | False (production)
-
-Install the library first:
-  pip install instasend-python
-"""
-
 try:
-    from instasend import APIService
-    _INSTASEND_AVAILABLE = True
+    from intasend import APIService
+    _INTASEND_AVAILABLE = True
 except ImportError:
-    _INSTASEND_AVAILABLE = False
+    _INTASEND_AVAILABLE = False
 
 
 def _normalize_phone(phone: str) -> str:
@@ -34,22 +22,22 @@ def _normalize_phone(phone: str) -> str:
 
 def initiate_mpesa_stk_push(order, phone_number: str) -> str:
     """
-    Initiates an M-Pesa STK Push via InstaSend.
-    Returns the InstaSend tracking_id on success.
+    Initiates an M-Pesa STK Push via IntaSend.
+    Returns the IntaSend tracking_id on success.
     Raises RuntimeError if the library is missing or the API call fails.
     """
-    if not _INSTASEND_AVAILABLE:
+    if not _INTASEND_AVAILABLE:
         raise RuntimeError(
-            'instasend-python is not installed. '
-            'Run: pip install instasend-python'
+            'intasend-python is not installed. '
+            'Run: pip install intasend-python'
         )
 
     from django.conf import settings
 
     api = APIService(
-        token=settings.INSTASEND_API_TOKEN,
-        publishable_key=settings.INSTASEND_PUBLISHABLE_KEY,
-        test=settings.INSTASEND_TEST_MODE,
+        token=settings.INTASEND_API_TOKEN,
+        publishable_key=settings.INTASEND_PUBLISHABLE_KEY,
+        test=settings.INTASEND_TEST_MODE,
     )
 
     normalized = _normalize_phone(phone_number)

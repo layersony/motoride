@@ -21,7 +21,7 @@ class Payment(models.Model):
 
     # M-Pesa details
     phone_number = models.CharField(max_length=20, blank=True)
-    instasend_tracking_id = models.CharField(max_length=200, blank=True)
+    intasend_tracking_id = models.CharField(max_length=200, blank=True)
     mpesa_reference = models.CharField(max_length=100, blank=True)   # from M-Pesa receipt
 
     created_at = models.DateTimeField(auto_now_add=True)

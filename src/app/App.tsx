@@ -7,7 +7,13 @@ import { Home } from './pages/Home';
 import { Products } from './pages/Products';
 import { ProductDetail } from './pages/ProductDetail';
 import { Cart } from './pages/Cart';
+import { Checkout } from './pages/Checkout';
+import { OrderConfirmation } from './pages/OrderConfirmation';
 import { Profile } from './pages/Profile';
+import { Login } from './pages/Login';
+import { Signup } from './pages/Signup';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { NotFound } from './pages/NotFound';
 
 export default function App() {
@@ -36,7 +42,13 @@ export default function App() {
               <Route path="/products" element={<Products />} />
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

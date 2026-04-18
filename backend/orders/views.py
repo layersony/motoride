@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -5,6 +7,11 @@ from rest_framework.views import APIView
 
 from .models import Order, CartItem
 from .serializers import OrderSerializer, CreateOrderSerializer, CartItemSerializer
+
+from payments.models import Payment
+from payments.serializers import PaymentSerializer
+
+logger = logging.getLogger(__name__)
 
 
 # ── Orders ──────────────────────────────────────────────────────────────────
@@ -33,7 +40,48 @@ class CreateOrderView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
-        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+        # ── Create payment record ──────────────────────────────────────────
+
+
+        payment_method = order.payment_method
+        mpesa_phone = request.data.get('mpesa_phone', '').strip()
+
+        payment = Payment.objects.create(
+            order=order,
+            method=payment_method,
+            amount=order.total,
+            phone_number=mpesa_phone,
+        )
+
+        # ── Initiate M-Pesa STK push ───────────────────────────────────────
+        mpesa_error = None
+        if payment_method == 'mpesa' and mpesa_phone:
+            try:
+                from payments.services import initiate_mpesa_stk_push
+                tracking_id = initiate_mpesa_stk_push(order, mpesa_phone)
+                payment.instasend_tracking_id = tracking_id
+                payment.status = 'processing'
+                payment.save(update_fields=['instasend_tracking_id', 'status'])
+            except Exception as exc:
+                logger.error('M-Pesa STK push failed for %s: %s', order.order_number, exc)
+                payment.status = 'failed'
+                payment.save(update_fields=['status'])
+                mpesa_error = str(exc)
+
+        # ── Send order-confirmation email ──────────────────────────────────
+        try:
+            from orders.utils import send_order_confirmation_email
+            send_order_confirmation_email(order)
+        except Exception as exc:
+            logger.error('Order confirmation email failed for %s: %s', order.order_number, exc)
+
+        response_data = OrderSerializer(order).data
+        response_data['payment'] = PaymentSerializer(payment).data
+        if mpesa_error:
+            response_data['mpesa_error'] = mpesa_error
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 # ── Cart ────────────────────────────────────────────────────────────────────

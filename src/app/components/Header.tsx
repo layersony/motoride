@@ -1,5 +1,6 @@
-import { Search, Moon, Sun, User, ShoppingCart } from 'lucide-react';
-import { Link } from 'react-router';
+import { useState, useRef, useEffect } from 'react';
+import { Search, Moon, Sun, ShoppingCart, LogIn, UserPlus, LogOut, User, Package } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
 import { useApp } from '../context/AppContext';
 
 interface HeaderProps {
@@ -8,8 +9,34 @@ interface HeaderProps {
 }
 
 export function Header({ darkMode, toggleDarkMode }: HeaderProps) {
-  const { cart } = useApp();
+  const navigate = useNavigate();
+  const { cart, isAuthenticated, isAuthLoading, apiUser, logout } = useApp();
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleLogout = async () => {
+    setDropdownOpen(false);
+    await logout();
+    navigate('/');
+  };
+
+  const initials = apiUser
+    ? `${apiUser.first_name?.[0] ?? ''}${apiUser.last_name?.[0] ?? ''}`.toUpperCase() ||
+      apiUser.username[0].toUpperCase()
+    : '';
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white dark:bg-gray-900 dark:border-gray-800">
@@ -36,7 +63,7 @@ export function Header({ darkMode, toggleDarkMode }: HeaderProps) {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
@@ -50,13 +77,78 @@ export function Header({ darkMode, toggleDarkMode }: HeaderProps) {
               )}
             </button>
 
-            {/* Login / Profile */}
-            <Link
-              to="/profile"
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              <User className="w-5 h-5 dark:text-white" />
-            </Link>
+            {/* Auth area */}
+            {isAuthLoading ? (
+              <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            ) : isAuthenticated ? (
+              /* Authenticated: avatar + dropdown */
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen((o) => !o)}
+                  className="w-9 h-9 rounded-full bg-red-600 text-white flex items-center justify-center text-sm font-semibold hover:bg-red-700 transition-colors"
+                  aria-label="Account menu"
+                >
+                  {initials || <User className="w-4 h-4" />}
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-lg border dark:border-gray-700 py-1 z-50">
+                    <div className="px-4 py-2.5 border-b dark:border-gray-700">
+                      <p className="text-sm font-medium dark:text-white truncate">
+                        {apiUser?.full_name || apiUser?.username}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{apiUser?.email}</p>
+                    </div>
+
+                    <Link
+                      to="/profile"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <User className="w-4 h-4" />
+                      My Account
+                    </Link>
+
+                    <Link
+                      to="/profile?tab=orders"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Package className="w-4 h-4" />
+                      My Orders
+                    </Link>
+
+                    <div className="border-t dark:border-gray-700 mt-1 pt-1">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Unauthenticated: Login + Sign up */
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-500 transition-colors"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Sign in
+                </Link>
+                <Link
+                  to="/signup"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Sign up</span>
+                </Link>
+              </div>
+            )}
 
             {/* Cart */}
             <Link

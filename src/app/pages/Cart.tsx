@@ -1,9 +1,19 @@
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export function Cart() {
-  const { cart, removeFromCart, updateCartQuantity } = useApp();
+  const navigate = useNavigate();
+  const { cart, removeFromCart, updateCartQuantity, isAuthenticated } = useApp();
+
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      // Scroll to header so user can log in via the modal/button there
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    navigate('/checkout');
+  };
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shipping = subtotal > 0 ? (subtotal > 100 ? 0 : 15) : 0;
@@ -141,9 +151,17 @@ export function Cart() {
                 </div>
               </div>
 
-              <button className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors mb-4">
+              <button
+                onClick={handleCheckout}
+                className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors mb-2"
+              >
                 Proceed to Checkout
               </button>
+              {!isAuthenticated && (
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  Please sign in to checkout
+                </p>
+              )}
 
               <Link
                 to="/products"

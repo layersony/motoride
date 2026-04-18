@@ -20,11 +20,24 @@ class Order(models.Model):
         ('failed', 'Failed'),
     ]
 
+    DELIVERY_CHOICES = [
+        ('standard', 'Standard Delivery (3-5 days)'),
+        ('express', 'Express Delivery (1-2 days)'),
+        ('pickup', 'Store Pickup'),
+    ]
+
+    PAYMENT_METHOD_CHOICES = [
+        ('mpesa', 'M-Pesa'),
+        ('cod', 'Cash on Delivery'),
+    ]
+
     user = models.ForeignKey('users.User', on_delete=models.PROTECT, related_name='orders')
     order_number = models.CharField(max_length=20, unique=True)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='unpaid')
+    delivery_method = models.CharField(max_length=20, choices=DELIVERY_CHOICES, default='standard')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod')
 
     # Shipping address snapshot (copied from user at order time)
     shipping_name = models.CharField(max_length=200)
@@ -38,6 +51,7 @@ class Order(models.Model):
     tax = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
 
+    tracking_number = models.CharField(max_length=100, blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

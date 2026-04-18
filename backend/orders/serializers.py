@@ -1,3 +1,4 @@
+from django.conf import settings as django_settings
 from rest_framework import serializers
 from products.serializers import ProductListSerializer
 from .models import Order, OrderItem, CartItem
@@ -15,15 +16,19 @@ class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     payment_status_display = serializers.CharField(source='get_payment_status_display', read_only=True)
+    delivery_method_display = serializers.CharField(source='get_delivery_method_display', read_only=True)
+    payment_method_display = serializers.CharField(source='get_payment_method_display', read_only=True)
 
     class Meta:
         model = Order
         fields = (
             'id', 'order_number', 'status', 'status_display',
             'payment_status', 'payment_status_display',
+            'delivery_method', 'delivery_method_display',
+            'payment_method', 'payment_method_display',
             'shipping_name', 'shipping_email', 'shipping_phone', 'shipping_address',
             'subtotal', 'shipping_cost', 'tax', 'total',
-            'notes', 'items', 'created_at',
+            'tracking_number', 'notes', 'items', 'created_at',
         )
         read_only_fields = ('id', 'order_number', 'created_at')
 
@@ -31,12 +36,20 @@ class OrderSerializer(serializers.ModelSerializer):
 class CreateOrderSerializer(serializers.Serializer):
     """
     Create an order from the user's current cart.
-    Frontend sends shipping details; backend computes pricing.
+    Frontend sends shipping + delivery + payment details; backend computes pricing.
     """
     shipping_name = serializers.CharField(max_length=200)
     shipping_email = serializers.EmailField()
     shipping_phone = serializers.CharField(max_length=30, required=False, allow_blank=True)
     shipping_address = serializers.CharField()
+    delivery_method = serializers.ChoiceField(
+        choices=['standard', 'express', 'pickup'],
+        default='standard',
+    )
+    payment_method = serializers.ChoiceField(
+        choices=['mpesa', 'cod'],
+        default='cod',
+    )
     notes = serializers.CharField(required=False, allow_blank=True)
 
     def create(self, validated_data):
@@ -47,13 +60,24 @@ class CreateOrderSerializer(serializers.Serializer):
             raise serializers.ValidationError('Your cart is empty.')
 
         subtotal = sum(item.total_price for item in cart_items)
-        shipping_cost = 0 if subtotal >= 100 else 15
-        tax = round(subtotal * 0.08, 2)
-        total = subtotal + shipping_cost + tax
+        delivery_method = validated_data.get('delivery_method', 'standard')
+
+        free_threshold = getattr(django_settings, 'SHIPPING_FREE_THRESHOLD', 100)
+        standard_cost = getattr(django_settings, 'SHIPPING_STANDARD', 15)
+        express_cost = getattr(django_settings, 'SHIPPING_EXPRESS', 35)
+
+        if delivery_method == 'pickup':
+            shipping_cost = 0
+        elif delivery_method == 'express':
+            shipping_cost = express_cost
+        else:  # standard
+            shipping_cost = 0 if subtotal >= free_threshold else standard_cost
+
+        tax = round(float(subtotal) * 0.08, 2)
+        total = float(subtotal) + shipping_cost + tax
 
         order = Order.objects.create(
             user=user,
-            order_number='',  # auto-generated in save()
             subtotal=subtotal,
             shipping_cost=shipping_cost,
             tax=tax,
@@ -61,6 +85,7 @@ class CreateOrderSerializer(serializers.Serializer):
             **validated_data,
         )
 
+        # Create order items and deduct stock
         for item in cart_items:
             OrderItem.objects.create(
                 order=order,
@@ -70,6 +95,12 @@ class CreateOrderSerializer(serializers.Serializer):
                 quantity=item.quantity,
                 unit_price=item.product.price,
             )
+            product = item.product
+            if product.stock >= item.quantity:
+                product.stock -= item.quantity
+                if product.stock == 0:
+                    product.in_stock = False
+                product.save(update_fields=['stock', 'in_stock'])
 
         # Clear the cart after order is placed
         cart_items.delete()

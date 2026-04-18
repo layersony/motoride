@@ -26,11 +26,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'users',
     'products',
     'orders',
     'core',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -143,3 +145,27 @@ SIMPLE_JWT = {
 ADMIN_SITE_HEADER = 'MotoRide Administration'
 ADMIN_SITE_TITLE = 'MotoRide Admin'
 ADMIN_INDEX_TITLE = 'Site Management'
+
+# ── Email ─────────────────────────────────────────────────────────────────────
+# Dev: prints to console. Prod: set EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'MotoRide <noreply@motoride.com>')
+
+# ── InstaSend / M-Pesa ────────────────────────────────────────────────────────
+# Set INSTASEND_TEST_MODE=False and provide real credentials in production.
+INSTASEND_API_TOKEN = os.getenv('INSTASEND_API_TOKEN', '')
+INSTASEND_PUBLISHABLE_KEY = os.getenv('INSTASEND_PUBLISHABLE_KEY', '')
+INSTASEND_TEST_MODE = os.getenv('INSTASEND_TEST_MODE', 'True') == 'True'
+
+# Delivery pricing (USD)
+SHIPPING_STANDARD = int(os.getenv('SHIPPING_STANDARD', '15'))   # free if subtotal >= FREE_THRESHOLD
+SHIPPING_EXPRESS = int(os.getenv('SHIPPING_EXPRESS', '35'))     # always charged
+SHIPPING_FREE_THRESHOLD = int(os.getenv('SHIPPING_FREE_THRESHOLD', '100'))
+
+# Frontend URL (used for password-reset links in emails)
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')

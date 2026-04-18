@@ -41,7 +41,7 @@ async function request<T>(
     const refreshed = await refreshAccessToken();
     if (refreshed) return request<T>(path, options, false);
     clearTokens();
-    window.location.href = '/';
+    window.location.href = '/login';
   }
 
   if (!res.ok) {
@@ -57,7 +57,7 @@ async function refreshAccessToken(): Promise<boolean> {
   const refresh = getRefreshToken();
   if (!refresh) return false;
   try {
-    const res = await fetch(`${BASE_URL}/token/refresh/`, {
+    const res = await fetch(`${BASE_URL}/auth/token/refresh/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh }),
@@ -155,6 +155,18 @@ export interface ApiCart {
   total: number;
 }
 
+export interface ApiPayment {
+  id: number;
+  method: string;
+  status: string;
+  status_display: string;
+  amount: string;
+  phone_number: string;
+  mpesa_reference: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ApiOrder {
   id: number;
   order_number: string;
@@ -162,6 +174,10 @@ export interface ApiOrder {
   status_display: string;
   payment_status: string;
   payment_status_display: string;
+  delivery_method: string;
+  delivery_method_display: string;
+  payment_method: string;
+  payment_method_display: string;
   shipping_name: string;
   shipping_email: string;
   shipping_phone: string;
@@ -170,8 +186,12 @@ export interface ApiOrder {
   shipping_cost: string;
   tax: string;
   total: string;
+  tracking_number: string;
+  notes: string;
   items: ApiOrderItem[];
   created_at: string;
+  payment?: ApiPayment;
+  mpesa_error?: string;
 }
 
 export interface ApiOrderItem {
@@ -237,6 +257,18 @@ export const authApi = {
 
   changePassword: (data: { old_password: string; new_password: string; new_password2: string }) =>
     request<{ detail: string }>('/auth/change-password/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  forgotPassword: (email: string) =>
+    request<{ detail: string }>('/auth/forgot-password/', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (data: { uid: string; token: string; new_password: string; new_password2: string }) =>
+    request<{ detail: string }>('/auth/reset-password/', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -317,8 +349,17 @@ export const ordersApi = {
     shipping_email: string;
     shipping_phone?: string;
     shipping_address: string;
+    delivery_method: 'standard' | 'express' | 'pickup';
+    payment_method: 'mpesa' | 'cod';
+    mpesa_phone?: string;
     notes?: string;
   }) => request<ApiOrder>('/orders/create/', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Payments ──────────────────────────────────────────────────────────────────
+
+export const paymentsApi = {
+  getStatus: (orderId: number) => request<ApiPayment>(`/payments/status/${orderId}/`),
 };
 
 // ── Core ──────────────────────────────────────────────────────────────────────

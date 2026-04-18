@@ -1,11 +1,18 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { User, Heart, Lock, MapPin, Phone, Mail, ShoppingBag, Eye } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export function Profile() {
-  const { user, updateUser, updatePassword, favorites, toggleFavorite } = useApp();
+  const navigate = useNavigate();
+  const { user, updateUser, updatePassword, favorites, toggleFavorite, isAuthenticated, isAuthLoading } = useApp();
   const [activeTab, setActiveTab] = useState<'profile' | 'favorites' | 'password'>('profile');
+
+  useEffect(() => {
+    if (!isAuthLoading && !isAuthenticated) {
+      navigate('/login?next=/profile', { replace: true });
+    }
+  }, [isAuthenticated, isAuthLoading, navigate]);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(user);
   const [passwordData, setPasswordData] = useState({

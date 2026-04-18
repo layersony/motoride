@@ -281,7 +281,7 @@ export function Checkout() {
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 Enter your M-Pesa PIN to complete the payment of{' '}
                 <span className="font-semibold text-gray-800 dark:text-white">
-                  ${total.toFixed(2)}
+                  Ksh{total.toFixed(2)}
                 </span>
               </p>
               <div className="flex items-center justify-center gap-2 text-gray-400 dark:text-gray-500 text-sm">

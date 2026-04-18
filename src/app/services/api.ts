@@ -360,6 +360,12 @@ export const ordersApi = {
 
 export const paymentsApi = {
   getStatus: (orderId: number) => request<ApiPayment>(`/payments/status/${orderId}/`),
+
+  initiate: (orderId: number, mpesaPhone: string) =>
+    request<ApiPayment>(`/payments/initiate/${orderId}/`, {
+      method: 'POST',
+      body: JSON.stringify({ phone_number: mpesaPhone }),
+    }),
 };
 
 // ── Core ──────────────────────────────────────────────────────────────────────

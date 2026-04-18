@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Package, ChevronRight, Loader2, ShoppingBag } from 'lucide-react';
+import { Package, ChevronRight, Loader2, ShoppingBag, Smartphone } from 'lucide-react';
 import { ordersApi, type ApiOrder } from '../services/api';
 import { useApp } from '../context/AppContext';
 
@@ -138,6 +138,12 @@ export function Orders() {
                   <span className="sm:hidden font-semibold text-red-600">
                     Ksh{parseFloat(order.total).toLocaleString()}
                   </span>
+                  {order.payment_status !== 'paid' && order.status !== 'cancelled' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                      <Smartphone className="w-3 h-3" />
+                      Pay Now
+                    </span>
+                  )}
                 </div>
 
                 {/* Item thumbnails */}

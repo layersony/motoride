@@ -11,7 +11,21 @@ const STATUS_COLORS: Record<string, string> = {
   shipped:    'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
   delivered:  'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
   cancelled:  'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+  refunded:   'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
 };
+
+const FILTER_TABS = [
+  { key: 'all',        label: 'All' },
+  { key: 'pending',    label: 'Order Placed' },
+  { key: 'confirmed',  label: 'Confirmed' },
+  { key: 'processing', label: 'Processing' },
+  { key: 'shipped',    label: 'Shipped' },
+  { key: 'delivered',  label: 'Delivered' },
+  { key: 'cancelled',  label: 'Cancelled' },
+  { key: 'refunded',   label: 'Refunded' },
+] as const;
+
+type FilterKey = typeof FILTER_TABS[number]['key'];
 
 const PAYMENT_COLORS: Record<string, string> = {
   paid:    'text-green-600 dark:text-green-400',
@@ -25,6 +39,7 @@ export function Orders() {
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
 
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) {
@@ -58,17 +73,54 @@ export function Orders() {
     );
   }
 
+  const filtered = activeFilter === 'all'
+    ? orders
+    : orders.filter((o) => o.status === activeFilter);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="container mx-auto px-4 max-w-4xl">
         <h1 className="text-3xl md:text-4xl mb-2 dark:text-white">My Orders</h1>
-        <p className="text-gray-500 dark:text-gray-400 mb-8">
+        <p className="text-gray-500 dark:text-gray-400 mb-6">
           {orders.length} order{orders.length !== 1 ? 's' : ''} placed
         </p>
 
         {error && (
           <div className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 p-4 rounded-lg mb-6">
             {error}
+          </div>
+        )}
+
+        {/* Filter tabs */}
+        {orders.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
+            {FILTER_TABS.map((tab) => {
+              const count = tab.key === 'all'
+                ? orders.length
+                : orders.filter((o) => o.status === tab.key).length;
+              if (tab.key !== 'all' && count === 0) return null;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveFilter(tab.key)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap
+                    ${activeFilter === tab.key
+                      ? 'bg-red-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                >
+                  {tab.label}
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold
+                    ${activeFilter === tab.key
+                      ? 'bg-white/20 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -86,9 +138,14 @@ export function Orders() {
               Start Shopping
             </Link>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-10 text-center">
+            <Package className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+            <p className="text-gray-500 dark:text-gray-400">No orders with this status.</p>
+          </div>
         ) : (
           <div className="space-y-4">
-            {orders.map((order) => (
+            {filtered.map((order) => (
               <Link
                 key={order.id}
                 to={`/orders/${order.id}`}

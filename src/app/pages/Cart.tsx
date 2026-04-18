@@ -8,8 +8,7 @@ export function Cart() {
 
   const handleCheckout = () => {
     if (!isAuthenticated) {
-      // Scroll to header so user can log in via the modal/button there
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      navigate('/login', { state: { from: { pathname: '/checkout' } } });
       return;
     }
     navigate('/checkout');

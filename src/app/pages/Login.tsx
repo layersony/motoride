@@ -1,10 +1,11 @@
 import { useState, FormEvent } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { login } = useApp();
 
@@ -14,7 +15,9 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const next = searchParams.get('next') || '/';
+  // Prefer state.from (set by ProtectedRoute), fall back to ?next= query param
+  const from = (location.state as { from?: Location })?.from?.pathname;
+  const next = from || searchParams.get('next') || '/';
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

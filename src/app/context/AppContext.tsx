@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from 'react';
 import {
@@ -108,6 +109,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartLoading, setCartLoading] = useState(false);
 
+  // Always-current ref so effects can read the latest cart without depending on it
+  const cartRef = useRef<CartItem[]>([]);
+  cartRef.current = cart;
+
   // ── Favorites (local) ──────────────────────────────────────────────────────
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
 
@@ -141,13 +146,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // ── Load server cart when user logs in ────────────────────────────────────
+  // ── Load server cart when user logs in, merging any guest items ──────────
   useEffect(() => {
     if (!apiUser) return;
+
+    // Snapshot guest cart at the moment login fires (before we overwrite it)
+    const guestItems = cartRef.current;
+
     setCartLoading(true);
     cartApi
       .getCart()
-      .then((res) => setCart(res.items.map(toCartItem)))
+      .then(async (res) => {
+        const serverItems = res.items.map(toCartItem);
+        const serverProductIds = new Set(serverItems.map((i) => i.id));
+
+        // Push any guest items that aren't already on the server cart
+        const toAdd = guestItems.filter((item) => !serverProductIds.has(item.id));
+        if (toAdd.length > 0) {
+          await Promise.allSettled(
+            toAdd.map((item) => cartApi.addItem(item.id, item.quantity))
+          );
+          // Reload so we have correct cartItemIds for all items
+          const refreshed = await cartApi.getCart();
+          setCart(refreshed.items.map(toCartItem));
+        } else {
+          setCart(serverItems);
+        }
+      })
       .catch(() => {})
       .finally(() => setCartLoading(false));
   }, [apiUser]);

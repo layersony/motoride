@@ -8,7 +8,7 @@ export function Cart() {
 
   const handleCheckout = () => {
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: { pathname: '/checkout' } } });
+      navigate('/login', { state: { from: { pathname: '/cart' } } });
       return;
     }
     navigate('/checkout');

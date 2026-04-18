@@ -351,7 +351,11 @@ export const cartApi = {
 // ── Orders ────────────────────────────────────────────────────────────────────
 
 export const ordersApi = {
-  getOrders: () => request<ApiOrder[]>('/orders/'),
+  getOrders: ({ page = 1, status }: { page?: number; status?: string } = {}) => {
+    const params = new URLSearchParams({ page: String(page) });
+    if (status && status !== 'all') params.set('status', status);
+    return request<PaginatedResponse<ApiOrder>>(`/orders/?${params}`);
+  },
 
   getOrder: (id: number) => request<ApiOrder>(`/orders/${id}/`),
 

@@ -1,6 +1,7 @@
 import logging
 
 from rest_framework import generics, status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,14 +15,25 @@ from payments.serializers import PaymentSerializer
 logger = logging.getLogger(__name__)
 
 
+class OrderPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 50
+
+
 # ── Orders ──────────────────────────────────────────────────────────────────
 
 class OrderListView(generics.ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = OrderPagination
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).prefetch_related('items')
+        qs = Order.objects.filter(user=self.request.user).prefetch_related('items')
+        status_filter = self.request.query_params.get('status')
+        if status_filter and status_filter in dict(Order.STATUS_CHOICES):
+            qs = qs.filter(status=status_filter)
+        return qs
 
 
 class OrderDetailView(generics.RetrieveAPIView):

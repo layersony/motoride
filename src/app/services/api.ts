@@ -155,6 +155,16 @@ export interface ApiCart {
   total: number;
 }
 
+export interface ApiAddress {
+  id: number;
+  label: string;
+  full_name: string;
+  phone: string;
+  address: string;
+  is_default: boolean;
+  created_at: string;
+}
+
 export interface ApiPayment {
   id: number;
   method: string;
@@ -367,6 +377,20 @@ export const paymentsApi = {
       method: 'POST',
       body: JSON.stringify({ phone_number: mpesaPhone }),
     }),
+};
+
+// ── Addresses ─────────────────────────────────────────────────────────────────
+
+export const addressesApi = {
+  list: () => request<ApiAddress[]>('/users/addresses/'),
+
+  create: (data: Omit<ApiAddress, 'id' | 'created_at'>) =>
+    request<ApiAddress>('/users/addresses/', { method: 'POST', body: JSON.stringify(data) }),
+
+  update: (id: number, data: Partial<Omit<ApiAddress, 'id' | 'created_at'>>) =>
+    request<ApiAddress>(`/users/addresses/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  delete: (id: number) => request<void>(`/users/addresses/${id}/`, { method: 'DELETE' }),
 };
 
 // ── Core ──────────────────────────────────────────────────────────────────────

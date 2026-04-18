@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router';
 import {
   ChevronRight, ChevronLeft, Check, Truck, Zap, Store,
-  Smartphone, Package, Loader2, AlertCircle,
+  Smartphone, Package, Loader2, AlertCircle, MapPin, Plus, Pencil, Trash2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { ordersApi, paymentsApi } from '../services/api';
+import { ordersApi, paymentsApi, addressesApi, type ApiAddress } from '../services/api';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -135,6 +135,53 @@ export function Checkout() {
   const [mpesaPhone, setMpesaPhone] = useState(user.phone || '');
   const [notes, setNotes] = useState('');
 
+  // ── Saved addresses ─────────────────────────────────────────────────────────
+  const [savedAddresses, setSavedAddresses] = useState<ApiAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<number | 'new' | null>(null);
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [addressLabel, setAddressLabel] = useState('');
+
+  // Load saved addresses and auto-select default
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    addressesApi.list().then((list) => {
+      setSavedAddresses(list);
+      if (list.length > 0) {
+        const def = list.find((a) => a.is_default) ?? list[0];
+        setSelectedAddressId(def.id);
+        setShipping({
+          name: def.full_name,
+          email: user.email || '',
+          phone: def.phone,
+          address: def.address,
+        });
+      } else {
+        setSelectedAddressId('new');
+      }
+    }).catch(() => {
+      setSelectedAddressId('new');
+    });
+  }, [isAuthenticated]);
+
+  const applyAddress = (addr: ApiAddress) => {
+    setSelectedAddressId(addr.id);
+    setShipping({ name: addr.full_name, email: user.email || '', phone: addr.phone, address: addr.address });
+  };
+
+  const deleteAddress = async (id: number) => {
+    await addressesApi.delete(id);
+    const updated = savedAddresses.filter((a) => a.id !== id);
+    setSavedAddresses(updated);
+    if (selectedAddressId === id) {
+      if (updated.length > 0) {
+        applyAddress(updated[0]);
+      } else {
+        setSelectedAddressId('new');
+        setShipping({ name: user.name || '', email: user.email || '', phone: user.phone || '', address: '' });
+      }
+    }
+  };
+
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState('');
 
@@ -186,8 +233,9 @@ export function Checkout() {
   // ── Validation ──────────────────────────────────────────────────────────────
   const validateStep1 = () => {
     if (!shipping.name.trim()) return 'Full name is required.';
-    if (!shipping.email.trim()) return 'Email is required.';
+    if (!shipping.email.trim()) return 'Email address is required.';
     if (!shipping.address.trim()) return 'Delivery address is required.';
+    if (selectedAddressId === null) return 'Please select or enter a delivery address.';
     return '';
   };
 
@@ -226,6 +274,16 @@ export function Checkout() {
         mpesa_phone: payment === 'mpesa' ? mpesaPhone : undefined,
         notes,
       });
+
+      if (selectedAddressId === 'new' && saveAddress && shipping.address.trim()) {
+        addressesApi.create({
+          label: addressLabel.trim() || 'Home',
+          full_name: shipping.name,
+          phone: shipping.phone,
+          address: shipping.address,
+          is_default: savedAddresses.length === 0,
+        }).catch(() => {});
+      }
 
       clearCart();
 
@@ -332,68 +390,211 @@ export function Checkout() {
           <div className="lg:col-span-2">
             {/* Step 1 — Shipping */}
             {step === 1 && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-6">
-                <h2 className="text-xl font-semibold dark:text-white mb-6">Shipping Details</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Full Name <span className="text-red-600">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={shipping.name}
-                      onChange={(e) => setShipping({ ...shipping, name: e.target.value })}
-                      className="w-full px-4 py-2.5 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
-                      placeholder="John Doe"
-                    />
+              <div className="space-y-4">
+                {/* Saved addresses */}
+                {savedAddresses.length > 0 && (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-6">
+                    <h2 className="text-xl font-semibold dark:text-white mb-4">Saved Addresses</h2>
+                    <div className="space-y-3">
+                      {savedAddresses.map((addr) => (
+                        <label
+                          key={addr.id}
+                          className={`flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer transition-colors
+                            ${selectedAddressId === addr.id
+                              ? 'border-red-600 bg-red-50 dark:bg-red-900/20'
+                              : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
+                            }`}
+                        >
+                          <input
+                            type="radio"
+                            name="address"
+                            className="sr-only"
+                            checked={selectedAddressId === addr.id}
+                            onChange={() => applyAddress(addr)}
+                          />
+                          <MapPin className={`w-5 h-5 mt-0.5 flex-shrink-0 ${selectedAddressId === addr.id ? 'text-red-600' : 'text-gray-400'}`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium dark:text-white">{addr.full_name}</span>
+                              {addr.label && (
+                                <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full">
+                                  {addr.label}
+                                </span>
+                              )}
+                              {addr.is_default && (
+                                <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded-full">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{addr.address}</p>
+                            {addr.phone && <p className="text-sm text-gray-500 dark:text-gray-500">{addr.phone}</p>}
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {!addr.is_default && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); addressesApi.update(addr.id, { is_default: true }).then(() => addressesApi.list().then(setSavedAddresses)); }}
+                                className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                                title="Set as default"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); deleteAddress(addr.id); }}
+                              className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </label>
+                      ))}
+
+                      {/* Use a different address */}
+                      <label
+                        className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-colors
+                          ${selectedAddressId === 'new'
+                            ? 'border-red-600 bg-red-50 dark:bg-red-900/20'
+                            : 'border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          name="address"
+                          className="sr-only"
+                          checked={selectedAddressId === 'new'}
+                          onChange={() => {
+                            setSelectedAddressId('new');
+                            setShipping({ name: user.name || '', email: user.email || '', phone: user.phone || '', address: '' });
+                          }}
+                        />
+                        <Plus className={`w-5 h-5 flex-shrink-0 ${selectedAddressId === 'new' ? 'text-red-600' : 'text-gray-400'}`} />
+                        <span className={`font-medium ${selectedAddressId === 'new' ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}`}>
+                          Use a different address
+                        </span>
+                      </label>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Email Address <span className="text-red-600">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      value={shipping.email}
-                      onChange={(e) => setShipping({ ...shipping, email: e.target.value })}
-                      className="w-full px-4 py-2.5 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
-                      placeholder="john@example.com"
-                    />
+                )}
+
+                {/* Address form — shown when entering new address or no saved ones */}
+                {selectedAddressId === 'new' && (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-6">
+                    <h2 className="text-xl font-semibold dark:text-white mb-4 flex items-center gap-2">
+                      <Pencil className="w-5 h-5" />
+                      {savedAddresses.length === 0 ? 'Shipping Details' : 'New Address'}
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Full Name <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={shipping.name}
+                          onChange={(e) => setShipping({ ...shipping, name: e.target.value })}
+                          className="w-full px-4 py-2.5 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="John Doe"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Email Address <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={shipping.email}
+                          onChange={(e) => setShipping({ ...shipping, email: e.target.value })}
+                          className="w-full px-4 py-2.5 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="john@example.com"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          value={shipping.phone}
+                          onChange={(e) => setShipping({ ...shipping, phone: e.target.value })}
+                          className="w-full px-4 py-2.5 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="0712 345 678"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Delivery Address <span className="text-red-600">*</span>
+                        </label>
+                        <textarea
+                          value={shipping.address}
+                          onChange={(e) => setShipping({ ...shipping, address: e.target.value })}
+                          rows={3}
+                          className="w-full px-4 py-2.5 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white resize-none"
+                          placeholder="Street, City, County"
+                        />
+                      </div>
+
+                      {/* Save address option */}
+                      <div className="sm:col-span-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={saveAddress}
+                            onChange={(e) => setSaveAddress(e.target.checked)}
+                            className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Save this address for future orders</span>
+                        </label>
+                        {saveAddress && (
+                          <input
+                            type="text"
+                            value={addressLabel}
+                            onChange={(e) => setAddressLabel(e.target.value)}
+                            placeholder="Label (e.g. Home, Work)"
+                            className="mt-2 w-full px-3 py-2 text-sm border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
+                          />
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={shipping.phone}
-                      onChange={(e) => setShipping({ ...shipping, phone: e.target.value })}
-                      className="w-full px-4 py-2.5 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
-                      placeholder="0712 345 678"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Delivery Address <span className="text-red-600">*</span>
-                    </label>
-                    <textarea
-                      value={shipping.address}
-                      onChange={(e) => setShipping({ ...shipping, address: e.target.value })}
-                      rows={3}
-                      className="w-full px-4 py-2.5 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white resize-none"
-                      placeholder="Street, City, County"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Order Notes (optional)
-                    </label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={2}
-                      className="w-full px-4 py-2.5 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white resize-none"
-                      placeholder="Any special instructions…"
-                    />
+                )}
+
+                {/* Contact & notes — always shown */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-6">
+                  <h2 className="text-xl font-semibold dark:text-white mb-4">Contact & Notes</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {selectedAddressId !== 'new' && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Email Address <span className="text-red-600">*</span>
+                          </label>
+                          <input
+                            type="email"
+                            value={shipping.email}
+                            onChange={(e) => setShipping({ ...shipping, email: e.target.value })}
+                            className="w-full px-4 py-2.5 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="john@example.com"
+                          />
+                        </div>
+                        <div />
+                      </>
+                    )}
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Order Notes (optional)
+                      </label>
+                      <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={2}
+                        className="w-full px-4 py-2.5 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white resize-none"
+                        placeholder="Any special instructions…"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

@@ -1,4 +1,6 @@
 from django.db.models import Q
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics, status, filters
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
@@ -11,6 +13,7 @@ from .serializers import (
 )
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.filter(is_active=True)
     serializer_class = CategorySerializer
@@ -18,6 +21,7 @@ class CategoryListView(generics.ListAPIView):
     pagination_class = None  # Return all categories at once
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ProductListView(generics.ListAPIView):
     serializer_class = ProductListSerializer
     permission_classes = [AllowAny]
@@ -57,6 +61,7 @@ class ProductListView(generics.ListAPIView):
         return qs
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.filter(is_active=True).select_related('category').prefetch_related(
         'images', 'specifications', 'features', 'reviews__user'
@@ -74,6 +79,7 @@ class ProductDetailView(generics.RetrieveAPIView):
         return super().get_object()
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class FeaturedProductsView(generics.ListAPIView):
     queryset = Product.objects.filter(is_active=True, is_featured=True).select_related('category')
     serializer_class = ProductListSerializer
@@ -81,6 +87,7 @@ class FeaturedProductsView(generics.ListAPIView):
     pagination_class = None
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class NewArrivalsView(generics.ListAPIView):
     queryset = Product.objects.filter(is_active=True, is_new=True).select_related('category')
     serializer_class = ProductListSerializer
@@ -88,6 +95,7 @@ class NewArrivalsView(generics.ListAPIView):
     pagination_class = None
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class SaleProductsView(generics.ListAPIView):
     queryset = Product.objects.filter(
         is_active=True, original_price__isnull=False
@@ -97,6 +105,7 @@ class SaleProductsView(generics.ListAPIView):
     pagination_class = None
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class RelatedProductsView(generics.ListAPIView):
     serializer_class = ProductListSerializer
     permission_classes = [AllowAny]
@@ -113,6 +122,7 @@ class RelatedProductsView(generics.ListAPIView):
             return Product.objects.none()
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ReviewListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 

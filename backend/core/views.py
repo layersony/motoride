@@ -1,3 +1,5 @@
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -7,6 +9,7 @@ from .models import Testimonial, SiteSettings
 from .serializers import TestimonialSerializer, NewsletterSerializer, SiteSettingsSerializer
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class TestimonialListView(generics.ListAPIView):
     queryset = Testimonial.objects.filter(is_active=True)
     serializer_class = TestimonialSerializer
@@ -14,6 +17,7 @@ class TestimonialListView(generics.ListAPIView):
     pagination_class = None
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class NewsletterSubscribeView(generics.CreateAPIView):
     serializer_class = NewsletterSerializer
     permission_classes = [AllowAny]
@@ -28,6 +32,7 @@ class NewsletterSubscribeView(generics.CreateAPIView):
         )
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class SiteSettingsView(APIView):
     permission_classes = [AllowAny]
 

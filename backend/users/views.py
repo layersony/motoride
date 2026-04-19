@@ -2,8 +2,10 @@ import resend
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.utils.decorators import method_decorator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -17,6 +19,7 @@ from .serializers import (
 )
 from core.models import AuditLog
 
+@method_decorator(csrf_exempt, name='dispatch')
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
@@ -34,6 +37,7 @@ class RegisterView(generics.CreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -81,6 +85,7 @@ class ChangePasswordView(APIView):
         return Response({'detail': 'Password changed successfully.'})
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
 
@@ -129,6 +134,7 @@ class ForgotPasswordView(APIView):
         return Response({'detail': 'If that email is registered, you will receive a reset link shortly.'})
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
 

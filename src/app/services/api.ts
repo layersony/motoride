@@ -22,15 +22,6 @@ export const clearTokens = () => {
 
 // ── Fetch wrapper ────────────────────────────────────────────────────────────
 
-// Paths that must NOT send an Authorization header (expired token → 403 from DRF)
-const PUBLIC_PATHS = [
-  '/auth/login/',
-  '/auth/register/',
-  '/auth/forgot-password/',
-  '/auth/reset-password/',
-  '/auth/token/refresh/',
-];
-
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -41,8 +32,7 @@ async function request<T>(
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
-  const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
-  if (token && !isPublic) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
